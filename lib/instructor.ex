@@ -27,7 +27,6 @@ defmodule Instructor do
 
     * `:adapter` - The adapter to use for chat completion. (defaults to the configured adapter, which defaults to `Instructor.Adapters.OpenAI`)
     * `:response_model` - The Ecto schema to validate the response against, or a valid map of Ecto types (see [Schemaless Ecto](https://hexdocs.pm/ecto/Ecto.Changeset.html#module-schemaless-changesets)).
-    * `:stream` - Whether to stream the response or not. (defaults to `false`)
     * `:validation_context` - The validation context to use when validating the response. (defaults to `%{}`)
     * `:mode` - The mode to use when parsing the response, :tools, :json, :md_json (defaults to `:tools`), generally speaking you don't need to change this unless you are not using OpenAI.
     * `:max_retries` - The maximum number of times to retry the LLM call if it fails, or does not pass validations.
@@ -50,46 +49,6 @@ defmodule Instructor do
               score: 0.999
           }}
 
-  When you're using Instructor in Streaming Mode, instead of returning back a tuple, it will return back a stream that emits tuples.
-  There are two main streaming modes available. array streaming and partial streaming.
-
-  Partial streaming will emit the record multiple times until it's complete.
-
-      iex> Instructor.chat_completion(
-      ...>   model: "gpt-3.5-turbo",
-      ...>   response_model: {:partial, %{name: :string, birth_date: :date}}
-      ...>   messages: [
-      ...>     %{
-      ...>       role: "user",
-      ...>       content: "Who is the first president of the United States?"
-      ...>     }
-      ...>   ]) |> Enum.to_list()
-      [
-        {:partial, %{name: "George Washington"}},
-        {:partial, %{name: "George Washington", birth_date: ~D[1732-02-22]}},
-        {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}}
-      ]
-
-  Whereas with array streaming, you can ask the LLM to return multiple instances of your Ecto schema,
-  and instructor will emit them one at a time as they arrive in complete form and validated.
-
-      iex> Instructor.chat_completion(
-      ...>   model: "gpt-3.5-turbo",
-      ...>   response_model: {:array, %{name: :string, birth_date: :date}}
-      ...>   messages: [
-      ...>     %{
-      ...>       role: "user",
-      ...>       content: "Who are the first 5 presidents of the United States?"
-      ...>     }
-      ...>   ]) |> Enum.to_list()
-
-      [
-        {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}},
-        {:ok, %{name: "John Adams", birth_date: ~D[1735-10-30]}},
-        {:ok, %{name: "Thomas Jefferson", birth_date: ~D[1743-04-13]}},
-        {:ok, %{name: "James Madison", birth_date: ~D[1751-03-16]}},
-        {:ok, %{name: "James Monroe", birth_date: ~D[1758-04-28]}}
-      ]
 
   If there's a validation error, it will return an error tuple with the change set describing the errors.
 
@@ -118,36 +77,15 @@ defmodule Instructor do
           {:ok, Ecto.Schema.t()}
           | {:error, Ecto.Changeset.t()}
           | {:error, String.t()}
-          | Stream.t()
   def chat_completion(params, config \\ nil) do
     params =
       params
       |> Keyword.put_new(:max_retries, 0)
       |> Keyword.put_new(:mode, :tools)
 
-    is_stream = Keyword.get(params, :stream, false)
     response_model = Keyword.fetch!(params, :response_model)
 
-    case {response_model, is_stream} do
-      {{:partial, {:array, response_model}}, true} ->
-        do_streaming_partial_array_chat_completion(response_model, params, config)
-
-      {{:partial, response_model}, true} ->
-        do_streaming_partial_chat_completion(response_model, params, config)
-
-      {{:array, response_model}, true} ->
-        do_streaming_array_chat_completion(response_model, params, config)
-
-      {response_model, false} ->
-        do_chat_completion(response_model, params, config)
-
-      {_, true} ->
-        raise """
-        Streaming not supported for response_model: #{inspect(response_model)}.
-
-        Make sure the response_model is a module that uses `Ecto.Schema` or is a valid Schemaless Ecto type definition.
-        """
-    end
+    do_chat_completion(response_model, params, config)
   end
 
   @doc """
@@ -315,162 +253,6 @@ defmodule Instructor do
     end
   end
 
-  defp do_streaming_partial_array_chat_completion(response_model, params, config) do
-    wrapped_model = %{
-      value:
-        {:parameterized, Ecto.Embedded,
-         %Ecto.Embedded{cardinality: :many, related: response_model}}
-    }
-
-    params = Keyword.put(params, :response_model, wrapped_model)
-    validation_context = Keyword.get(params, :validation_context, %{})
-    mode = Keyword.get(params, :mode, :tools)
-    prompt = prepare_prompt(params, config)
-
-    model =
-      if is_ecto_schema(response_model) do
-        response_model.__struct__()
-      else
-        {%{}, response_model}
-      end
-
-    adapter(config).chat_completion(prompt, params, config)
-    |> Stream.map(&parse_stream_chunk_for_mode(mode, &1))
-    |> Instructor.JSONStreamParser.parse()
-    |> Stream.transform(
-      fn -> {nil, []} end,
-      # reducer
-      fn
-        %{"value" => []}, {last, acc} ->
-          {[], {last, acc}}
-
-        %{"value" => params_array}, {last, acc} ->
-          acc =
-            if length(params_array) == length(acc) + 2 do
-              with changeset <- cast_all(model, Map.from_struct(last)),
-                   {:validation, %Ecto.Changeset{valid?: true} = changeset} <-
-                     {:validation, call_validate(response_model, changeset, validation_context)} do
-                acc ++ [{:ok, changeset |> Ecto.Changeset.apply_changes()}]
-              else
-                {:validation, changeset} -> acc ++ [{:error, changeset}]
-                {:error, reason} -> acc ++ [{:error, reason}]
-                e -> acc ++ [{:error, e}]
-              end
-            else
-              acc
-            end
-
-          params = List.last(params_array)
-          last = model |> cast_all(params) |> Ecto.Changeset.apply_changes()
-          {[acc ++ [{:partial, last}]], {last, acc}}
-
-        %{}, acc ->
-          {[], acc}
-      end,
-      # last, validate last entry, emit all
-      fn {last, acc} ->
-        acc =
-          with changeset <- cast_all(model, Map.from_struct(last)),
-               {:validation, %Ecto.Changeset{valid?: true} = changeset} <-
-                 {:validation, call_validate(response_model, changeset, validation_context)} do
-            acc ++ [{:ok, changeset |> Ecto.Changeset.apply_changes()}]
-          else
-            {:validation, changeset} -> acc ++ [{:error, changeset}]
-            {:error, reason} -> acc ++ [{:error, reason}]
-            e -> acc ++ [{:error, e}]
-          end
-
-        {[acc], nil}
-      end,
-      fn _acc -> nil end
-    )
-  end
-
-  defp do_streaming_partial_chat_completion(response_model, params, config) do
-    wrapped_model = %{
-      value:
-        {:parameterized, Ecto.Embedded,
-         %Ecto.Embedded{cardinality: :one, related: response_model}}
-    }
-
-    params = Keyword.put(params, :response_model, wrapped_model)
-    validation_context = Keyword.get(params, :validation_context, %{})
-    mode = Keyword.get(params, :mode, :tools)
-    prompt = prepare_prompt(params, config)
-
-    adapter(config).chat_completion(prompt, params, config)
-    |> Stream.map(&parse_stream_chunk_for_mode(mode, &1))
-    |> Instructor.JSONStreamParser.parse()
-    |> Stream.transform(
-      fn -> nil end,
-      # partial
-      fn params, _acc ->
-        params = Map.get(params, "value", %{})
-
-        model =
-          if is_ecto_schema(response_model) do
-            response_model.__struct__()
-          else
-            {%{}, response_model}
-          end
-
-        changeset = cast_all(model, params)
-        model = changeset |> Ecto.Changeset.apply_changes()
-        {[{:partial, model}], changeset}
-      end,
-      # last
-      fn changeset ->
-        with {:validation, %Ecto.Changeset{valid?: true} = changeset} <-
-               {:validation, call_validate(response_model, changeset, validation_context)} do
-          model = changeset |> Ecto.Changeset.apply_changes()
-          {[{:ok, model}], nil}
-        else
-          {:validation, changeset} -> [{:error, changeset}]
-          {:error, reason} -> {:error, reason}
-          e -> {:error, e}
-        end
-      end,
-      fn _acc -> nil end
-    )
-  end
-
-  defp do_streaming_array_chat_completion(response_model, params, config) do
-    wrapped_model = %{
-      value:
-        {:parameterized, Ecto.Embedded,
-         %Ecto.Embedded{cardinality: :many, related: response_model}}
-    }
-
-    params = Keyword.put(params, :response_model, wrapped_model)
-    validation_context = Keyword.get(params, :validation_context, %{})
-    mode = Keyword.get(params, :mode, :tools)
-
-    prompt = prepare_prompt(params, config)
-
-    adapter(config).chat_completion(prompt, params, config)
-    |> Stream.map(&parse_stream_chunk_for_mode(mode, &1))
-    |> Jaxon.Stream.from_enumerable()
-    |> Jaxon.Stream.query([:root, "value", :all])
-    |> Stream.map(fn params ->
-      model =
-        if is_ecto_schema(response_model) do
-          response_model.__struct__()
-        else
-          {%{}, response_model}
-        end
-
-      with changeset <- cast_all(model, params),
-           {:validation, %Ecto.Changeset{valid?: true} = changeset} <-
-             {:validation, call_validate(response_model, changeset, validation_context)} do
-        {:ok, changeset |> Ecto.Changeset.apply_changes()}
-      else
-        {:validation, changeset} -> {:error, changeset}
-        {:error, reason} -> {:error, reason}
-        e -> {:error, e}
-      end
-    end)
-  end
-
   defp do_chat_completion(response_model, params, config) do
     max_retries = Keyword.get(params, :max_retries)
     prompt = prepare_prompt(params, config)
@@ -518,21 +300,6 @@ defmodule Instructor do
          ]
        }),
        do: Jason.decode(args)
-
-  defp parse_stream_chunk_for_mode(:md_json, %{"choices" => [%{"delta" => %{"content" => chunk}}]}),
-       do: chunk
-
-  defp parse_stream_chunk_for_mode(:json, %{"choices" => [%{"delta" => %{"content" => chunk}}]}),
-    do: chunk
-
-  defp parse_stream_chunk_for_mode(:tools, %{
-         "choices" => [
-           %{"delta" => %{"tool_calls" => [%{"function" => %{"arguments" => chunk}}]}}
-         ]
-       }),
-       do: chunk
-
-  defp parse_stream_chunk_for_mode(_, %{"choices" => [%{"finish_reason" => "stop"}]}), do: ""
 
   defp echo_response(%{
          "choices" => [

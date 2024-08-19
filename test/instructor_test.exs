@@ -33,12 +33,6 @@ defmodule InstructorTest do
 
   def mock_response(_, _, _), do: nil
 
-  def mock_stream_response(:openai_mock, mode, expected) do
-    TestHelpers.mock_openai_response_stream(mode, expected)
-  end
-
-  def mock_stream_response(_, _, _), do: nil
-
   for adapter <- [:openai_mock, :openai, :llamacpp] do
     # for adapter <- [:openai] do
     describe "#{inspect(adapter)}" do
@@ -202,101 +196,6 @@ defmodule InstructorTest do
           field(:birthdate, :date)
         end
       end
-
-      @tag adapter: adapter
-      test "streams arrays one at a time" do
-        presidents = [
-          %{name: "George Washington", birthdate: ~D[1732-02-22]},
-          %{name: "John Adams", birthdate: ~D[1735-10-30]},
-          %{name: "Thomas Jefferson", birthdate: ~D[1743-04-13]}
-        ]
-
-        mock_stream_response(unquote(adapter), :tools, presidents)
-
-        result =
-          Instructor.chat_completion(
-            model: "gpt-3.5-turbo",
-            stream: true,
-            response_model: {:array, President},
-            messages: [
-              %{role: "user", content: "What are the first 3 presidents of the United States?"}
-            ]
-          )
-
-        assert TestHelpers.is_stream?(result)
-
-        assert [
-                 {:ok, %{name: "George Washington", birthdate: %Date{}}},
-                 {:ok, %{name: "John Adams", birthdate: %Date{}}},
-                 {:ok, %{name: "Thomas Jefferson", birthdate: %Date{}}}
-               ] = Enum.to_list(result)
-      end
-
-      @tag adapter: adapter
-      test "stream partial object" do
-        president = %{name: "George Washington", birthdate: ~D[1732-02-22]}
-
-        mock_stream_response(unquote(adapter), :tools, president)
-
-        result =
-          Instructor.chat_completion(
-            model: "gpt-3.5-turbo",
-            stream: true,
-            response_model: {:partial, President},
-            messages: [
-              %{role: "user", content: "Who was the first president of the United States"}
-            ]
-          )
-
-        assert TestHelpers.is_stream?(result)
-
-        result = Enum.to_list(result)
-        [first, second, third, last] = result |> Enum.uniq()
-
-        assert {:partial, %President{}} = first
-
-        assert match?({:partial, %President{name: "George Washington"}}, second) or
-                 match?({:partial, %President{birthdate: %Date{}}}, second)
-
-        assert match?({:partial, %President{name: "George Washington"}}, third) or
-                 match?({:partial, %President{birthdate: %Date{}}}, third)
-
-        assert {:ok, %President{name: "George Washington", birthdate: %Date{}}} = last
-      end
-
-      @tag adapter: adapter
-      test "stream partial array of objects" do
-        presidents = [
-          %{name: "George Washington", birthdate: ~D[1732-02-22]},
-          %{name: "John Adams", birthdate: ~D[1735-10-30]}
-        ]
-
-        mock_stream_response(unquote(adapter), :tools, presidents)
-
-        result =
-          Instructor.chat_completion(
-            model: "gpt-3.5-turbo",
-            stream: true,
-            response_model: {:partial, {:array, President}},
-            messages: [
-              %{role: "user", content: "Who were the first 2 presidents of the United States"}
-            ]
-          )
-
-        assert TestHelpers.is_stream?(result)
-
-        result = Enum.filter(result, &(length(&1) > 0)) |> Enum.uniq()
-
-        [first, second, third, fourth, fifth, sixth, seventh] = result |> Enum.uniq()
-
-        assert [partial: %President{}] = first
-        assert [partial: %President{}] = second
-        assert [partial: %President{}] = third
-        assert [ok: %President{}, partial: %President{}] = fourth
-        assert [ok: %President{}, partial: %President{}] = fifth
-        assert [ok: %President{}, partial: %President{}] = sixth
-        assert [ok: %President{}, ok: %President{}] = seventh
-      end
     end
   end
 
@@ -396,30 +295,6 @@ defmodule InstructorTest do
         )
 
       assert {:ok, %{name: "Thomas"}} = result
-    end
-
-    @tag adapter: :openai_mock
-    test "handles streaming #{mode}" do
-      mode = unquote(mode)
-
-      TestHelpers.mock_openai_response_stream(mode, [
-        %{name: "Thomas"},
-        %{name: "Jason"}
-      ])
-
-      result =
-        Instructor.chat_completion(
-          model: "gpt-3.5-turbo",
-          mode: mode,
-          stream: true,
-          response_model: {:array, %{name: :string}},
-          messages: [
-            %{role: "user", content: "Repeat after me: Thomas, Jason"}
-          ]
-        )
-
-      assert [ok: %{name: "Thomas"}, ok: %{name: "Jason"}] =
-               result |> Enum.to_list()
     end
   end
 

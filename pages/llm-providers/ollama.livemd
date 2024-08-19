@@ -54,17 +54,3 @@ Instructor.chat_completion(
   ]
 )
 ```
-
-```elixir
-Instructor.chat_completion(
-  model: "nous-hermes2-mixtral:8x7b-dpo-q6_K",
-  mode: :json,
-  stream: true,
-  response_model: {:array, President},
-  messages: [
-    %{role: "user", content: "Who are the first three presidents"}
-  ]
-)
-|> Stream.each(fn {:ok, x} -> IO.inspect(x) end)
-|> Stream.run()
-```

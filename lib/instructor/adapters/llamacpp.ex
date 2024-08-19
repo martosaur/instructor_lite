@@ -31,14 +31,8 @@ defmodule Instructor.Adapters.Llamacpp do
     ...> )
   """
   @impl true
-  def chat_completion(prompt, params, _config \\ nil) do
-    stream = Keyword.get(params, :stream, false)
-
-    if stream do
-      do_streaming_chat_completion(prompt)
-    else
-      do_chat_completion(prompt)
-    end
+  def chat_completion(prompt, _params, _config \\ nil) do
+    do_chat_completion(prompt)
   end
 
   @impl true
@@ -53,49 +47,6 @@ defmodule Instructor.Adapters.Llamacpp do
     %{
       grammar: grammar,
       prompt: prompt
-    }
-  end
-
-  defp do_streaming_chat_completion(prompt) do
-    pid = self()
-
-    Stream.resource(
-      fn ->
-        Task.async(fn ->
-          Req.post(url(),
-            json: Map.put(prompt, :stream, true),
-            receive_timeout: 60_000,
-            into: fn {:data, data}, {req, resp} ->
-              send(pid, data)
-              {:cont, {req, resp}}
-            end
-          )
-
-          send(pid, :done)
-        end)
-      end,
-      fn acc ->
-        receive do
-          :done ->
-            {:halt, acc}
-
-          "data: " <> data ->
-            data = Jason.decode!(data)
-            {[data], acc}
-        end
-      end,
-      fn acc -> acc end
-    )
-    |> Stream.map(fn %{"content" => chunk} ->
-      to_openai_streaming_response(chunk)
-    end)
-  end
-
-  defp to_openai_streaming_response(chunk) when is_binary(chunk) do
-    %{
-      "choices" => [
-        %{"delta" => %{"tool_calls" => [%{"function" => %{"arguments" => chunk}}]}}
-      ]
     }
   end
 

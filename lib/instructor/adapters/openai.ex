@@ -5,16 +5,10 @@ defmodule Instructor.Adapters.OpenAI do
   @behaviour Instructor.Adapter
 
   @impl true
-  def chat_completion(prompt, params, config) do
+  def chat_completion(prompt, _params, config) do
     config = if config, do: config, else: config()
 
-    stream = Keyword.get(params, :stream, false)
-
-    if stream do
-      do_streaming_chat_completion(prompt, config)
-    else
-      do_chat_completion(prompt, config)
-    end
+    do_chat_completion(prompt, config)
   end
 
   @impl true
@@ -26,58 +20,6 @@ defmodule Instructor.Adapters.OpenAI do
     {_, params} = Keyword.pop(params, :mode)
 
     Enum.into(params, %{})
-  end
-
-  defp do_streaming_chat_completion(prompt, config) do
-    pid = self()
-    options = http_options(config)
-
-    Stream.resource(
-      fn ->
-        Task.async(fn ->
-          options =
-            Keyword.merge(options,
-              json: prompt,
-              auth: {:bearer, api_key(config)},
-              into: fn {:data, data}, {req, resp} ->
-                chunks =
-                  data
-                  |> String.split("\n")
-                  |> Enum.filter(fn line ->
-                    String.starts_with?(line, "data: {")
-                  end)
-                  |> Enum.map(fn line ->
-                    line
-                    |> String.replace_prefix("data: ", "")
-                    |> Jason.decode!()
-                  end)
-
-                for chunk <- chunks do
-                  send(pid, chunk)
-                end
-
-                {:cont, {req, resp}}
-              end
-            )
-
-          Req.post(url(config), options)
-          send(pid, :done)
-        end)
-      end,
-      fn task ->
-        receive do
-          :done ->
-            {:halt, task}
-
-          data ->
-            {[data], task}
-        after
-          15_000 ->
-            {:halt, task}
-        end
-      end,
-      fn task -> Task.await(task) end
-    )
   end
 
   defp do_chat_completion(prompt, config) do

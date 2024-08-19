@@ -131,9 +131,6 @@ end
 - [ ] Add a Bumblebee adapter
 - [ ] Add llamacpp_ex adapter
 - [ ] Support naked ecto types by auto-wrapping, not just maps of ecto types, do not wrap if we don't need to... Current codepaths are muddled
-- [x] Support Streaming
-  - [ ] Verify schemaless support `{:array, %{name: :string}}`
-  - [ ] Support typespec style support for array streaming `[MySchema]`
 - [ ] Optional/Maybe types
 - [ ] Add Livebook Tutorials, include in Hexdocs
     - [x] Text Classification
