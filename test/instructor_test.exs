@@ -1,361 +1,529 @@
-Code.compiler_options(ignore_module_conflict: true, docs: true, debug_info: true)
-
 defmodule InstructorTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+
+  alias Instructor.TestSchemas
 
   import Mox
 
-  require Instructor.TestHelpers
-  alias Instructor.TestHelpers
-
   setup :verify_on_exit!
 
-  setup context do
-    case Map.get(context, :adapter) do
-      :llamacpp ->
-        Application.put_env(:instructor, :adapter, Instructor.Adapters.Llamacpp)
-
-      :openai ->
-        Application.put_env(:instructor, :adapter, Instructor.Adapters.OpenAI)
-        Application.put_env(:instructor, :openai, api_key: System.fetch_env!("OPENAI_API_KEY"))
-
-      :openai_mock ->
-        Application.put_env(:instructor, :adapter, InstructorTest.MockOpenAI)
-
-      _ ->
-        :ok
-    end
-  end
-
-  def mock_response(:openai_mock, mode, expected) do
-    TestHelpers.mock_openai_response(mode, expected)
-  end
-
-  def mock_response(_, _, _), do: nil
-
-  for adapter <- [:openai_mock, :openai, :llamacpp] do
-    # for adapter <- [:openai] do
-    describe "#{inspect(adapter)}" do
-      @tag adapter: adapter
-      test "schemaless ecto" do
-        expected = %{name: "George Washington", birth_date: ~D[1732-02-22]}
-        mock_response(unquote(adapter), :tools, expected)
-
-        result =
-          Instructor.chat_completion(
-            model: "gpt-3.5-turbo",
-            response_model: %{name: :string, birth_date: :date},
-            messages: [
-              %{role: "user", content: "Who was the first president of the USA?"}
-            ]
-          )
-
-        assert {:ok, %{name: name, birth_date: birth_date}} = result
-        assert is_binary(name)
-        assert %Date{} = birth_date
-      end
-
-      defmodule SpamPrediction do
-        use Ecto.Schema
-
-        @primary_key false
-        embedded_schema do
-          field(:class, Ecto.Enum, values: [:spam, :not_spam])
-          field(:score, :float)
-        end
-      end
-
-      @tag adapter: adapter
-      test "basic ecto model" do
-        expected = %{class: :spam, score: 0.9}
-        mock_response(unquote(adapter), :tools, expected)
-
-        result =
-          Instructor.chat_completion(
-            model: "gpt-3.5-turbo",
-            response_model: SpamPrediction,
-            messages: [
-              %{
-                role: "user",
-                content:
-                  "Classify the following text: Hello, I am a Nigerian prince and I would like to give you $1,000,000."
-              }
-            ]
-          )
-
-        assert {:ok, %SpamPrediction{class: :spam, score: score}} = result
-        assert is_float(score)
-      end
-
-      defmodule AllEctoTypes do
-        use Ecto.Schema
-
-        # Be explicit about all fields in this test
-        @primary_key false
-        embedded_schema do
-          field(:binary_id, :binary_id)
-          field(:integer, :integer)
-          field(:float, :float)
-          field(:boolean, :boolean)
-          field(:string, :string)
-          # field(:binary, :binary)
-          field(:array, {:array, :string})
-          field(:map, :map)
-          field(:map_two, {:map, :string})
-          field(:decimal, :decimal)
-          field(:date, :date)
-          field(:time, :time)
-          field(:time_usec, :time_usec)
-          field(:naive_datetime, :naive_datetime)
-          field(:naive_datetime_usec, :naive_datetime_usec)
-          field(:utc_datetime, :utc_datetime)
-          field(:utc_datetime_usec, :utc_datetime_usec)
-        end
-      end
-
-      @tag adapter: adapter
-      test "all ecto types" do
-        expected = %{
-          binary_id: "binary_id",
-          integer: 1,
-          float: 1.0,
-          boolean: true,
-          string: "string",
-          array: ["array"],
-          map: %{"map" => "map"},
-          map_two: %{"map_two" => "map_two"},
-          decimal: 1.0,
-          date: "2021-08-01",
-          time: "12:00:00",
-          time_usec: "12:00:00.000000",
-          naive_datetime: "2021-08-01T12:00:00",
-          naive_datetime_usec: "2021-08-01T12:00:00.000000",
-          utc_datetime: "2021-08-01T12:00:00Z",
-          utc_datetime_usec: "2021-08-01T12:00:00.000000Z"
-        }
-
-        mock_response(unquote(adapter), :tools, expected)
-
-        result =
-          Instructor.chat_completion(
-            model: "gpt-3.5-turbo",
-            response_model: AllEctoTypes,
-            messages: [
-              %{
-                role: "user",
-                content:
-                  "What are the types of the following fields: binary_id, integer, float, boolean, string, array, map, map_two, decimal, date, time, time_usec, naive_datetime, naive_datetime_usec, utc_datetime, utc_datetime_usec?"
-              }
-            ]
-          )
-
-        assert {:ok,
-                %AllEctoTypes{
-                  binary_id: binary_id,
-                  integer: integer,
-                  float: float,
-                  boolean: boolean,
-                  string: string,
-                  array: array,
-                  map: map,
-                  map_two: map_two,
-                  decimal: decimal,
-                  date: date,
-                  time: time,
-                  time_usec: time_usec,
-                  naive_datetime: naive_datetime,
-                  naive_datetime_usec: naive_datetime_usec,
-                  utc_datetime: utc_datetime,
-                  utc_datetime_usec: utc_datetime_usec
-                }} = result
-
-        assert is_binary(binary_id)
-        assert is_integer(integer)
-        assert is_float(float)
-        assert is_boolean(boolean)
-        assert is_binary(string)
-        assert is_list(array)
-        assert is_map(map)
-        assert is_map(map_two)
-        assert %Decimal{} = decimal
-        assert %Date{} = date
-        assert %Time{} = time
-        assert %Time{} = time_usec
-        assert %NaiveDateTime{} = naive_datetime
-        assert %NaiveDateTime{} = naive_datetime_usec
-        assert %DateTime{} = utc_datetime
-        assert %DateTime{} = utc_datetime_usec
-      end
-
-      defmodule President do
-        use Ecto.Schema
-
-        @primary_key false
-        embedded_schema do
-          field(:name, :string)
-          field(:birthdate, :date)
-        end
-      end
-    end
-  end
-
-  defmodule QuestionAnswer do
-    use Ecto.Schema
-    use Instructor.Validator
-
-    @primary_key false
-    embedded_schema do
-      field(:question, :string)
-      field(:answer, :string)
-    end
-
-    @impl true
-    def validate_changeset(changeset) do
-      changeset
-      |> validate_with_llm(:answer, "do not say anything objectionable")
-    end
-  end
-
-  @tag adapter: :openai_mock
-  test "llm validator" do
-    TestHelpers.mock_openai_response(:tools, %{
-      question: "What is the meaning of life?",
-      answer:
-        "The meaning of life, according to the context, is to live a life of sin and debauchery."
-    })
-
-    TestHelpers.mock_openai_response(:tools, %{
-      valid?: false,
-      reason: "The statement promotes sin and debauchery, which is objectionable."
-    })
-
-    result =
-      Instructor.chat_completion(
-        model: "gpt-3.5-turbo",
-        response_model: QuestionAnswer,
-        messages: [
-          %{
-            role: "user",
-            content: "What is the meaning of life?"
-          }
-        ]
-      )
-
-    assert {:error, %Ecto.Changeset{valid?: false}} = result
-  end
-
-  @tag adapter: :openai_mock
-  test "retry upto n times" do
-    TestHelpers.mock_openai_response(:tools, %{wrong_field: "foobar"})
-    TestHelpers.mock_openai_response(:tools, %{wrong_field: "foobar"})
-
-    result =
-      Instructor.chat_completion(
-        model: "gpt-3.5-turbo",
-        max_retries: 1,
-        response_model: %{field: :string},
-        messages: [
-          %{role: "user", content: "What is the field?"}
-        ]
-      )
-
-    assert {:error, %Ecto.Changeset{valid?: false}} = result
-
-    TestHelpers.mock_openai_response(:tools, %{wrong_field: "foobar"})
-    TestHelpers.mock_openai_response(:tools, %{field: 123})
-    TestHelpers.mock_openai_response(:tools, %{field: "foobar"})
-
-    result =
-      Instructor.chat_completion(
-        model: "gpt-3.5-turbo",
-        max_retries: 3,
-        response_model: %{field: :string},
-        messages: [
-          %{role: "user", content: "What is the field?"}
-        ]
-      )
-
-    assert {:ok, %{field: "foobar"}} = result
-  end
-
-  for mode <- [:tools, :json, :md_json] do
-    @tag adapter: :openai_mock
-    test "handles #{mode}" do
-      mode = unquote(mode)
-      TestHelpers.mock_openai_response(mode, %{name: "Thomas"})
-
-      result =
-        Instructor.chat_completion(
-          model: "gpt-3.5-turbo",
-          mode: mode,
-          response_model: %{name: :string},
-          messages: [
-            %{role: "user", content: "What's my name?"}
-          ]
-        )
-
-      assert {:ok, %{name: "Thomas"}} = result
-    end
-  end
-
-  describe "prepare_prompt" do
-    @tag adapter: :openai_mock
-    test "calls adapter's prompt/1 callback" do
-      expect(InstructorTest.MockOpenAI, :prompt, fn params ->
-        assert params[:tool_choice] == %{function: %{name: "Schema"}, type: "function"}
-
-        assert params[:tools] == [
-                 %{
-                   function: %{
-                     "description" =>
-                       "Correctly extracted `Schema` with all the required parameters with correct types",
-                     "name" => "Schema",
-                     "parameters" => %{
-                       "properties" => %{
-                         "birth_date" => %{"format" => "date", "type" => "string"},
-                         "name" => %{"type" => "string"}
-                       },
-                       "required" => ["birth_date", "name"],
-                       "title" => "root",
-                       "type" => "object"
-                     }
-                   },
-                   type: "function"
-                 }
+  describe "prepare_prompt/2" do
+    test "schemaless ecto" do
+      expect(MockAdapter, :prompt, fn params ->
+        assert params == [
+                 tool_choice: %{function: %{name: "Schema"}, type: "function"},
+                 tools: [
+                   %{
+                     function: %{
+                       "description" =>
+                         "Correctly extracted `Schema` with all the required parameters with correct types",
+                       "name" => "Schema",
+                       "parameters" => %{
+                         "properties" => %{
+                           "birth_date" => %{"format" => "date", "type" => "string"},
+                           "name" => %{"type" => "string"}
+                         },
+                         "required" => ["birth_date", "name"],
+                         "title" => "root",
+                         "type" => "object"
+                       }
+                     },
+                     type: "function"
+                   }
+                 ],
+                 model: "gpt-3.5-turbo",
+                 response_model: %{name: :string, birth_date: :date},
+                 messages: [%{role: "user", content: "Who was the first president of the USA"}]
                ]
 
-        assert params[:model] == "gpt-3.5-turbo"
-        assert params[:response_model] == %{name: :string, birth_date: :date}
-
-        assert params[:messages] == [
-                 %{role: "user", content: "Who was the first president of the USA?"}
-               ]
-
-        %{foo: "bar"}
+        %{hello: "prompt"}
       end)
 
-      assert %{foo: "bar"} ==
-               Instructor.prepare_prompt(
+      Instructor.prepare_prompt(
+        [
+          model: "gpt-3.5-turbo",
+          response_model: %{name: :string, birth_date: :date},
+          messages: [
+            %{role: "user", content: "Who was the first president of the USA"}
+          ]
+        ],
+        %{adapter: MockAdapter}
+      )
+    end
+
+    test "basic ecto model" do
+      expect(MockAdapter, :prompt, fn params ->
+        assert params == [
+                 tool_choice: %{function: %{name: "Schema"}, type: "function"},
+                 tools: [
+                   %{
+                     function: %{
+                       "description" =>
+                         "Correctly extracted `Schema` with all the required parameters with correct types",
+                       "name" => "Schema",
+                       "parameters" => %{
+                         "description" => "",
+                         "properties" => %{
+                           "class" => %{
+                             "enum" => ["spam", "not_spam"],
+                             "title" => "class",
+                             "type" => "string"
+                           },
+                           "score" => %{
+                             "format" => "float",
+                             "title" => "score",
+                             "type" => "number"
+                           }
+                         },
+                         "required" => ["class", "score"],
+                         "title" => "Instructor.TestSchemas.SpamPrediction",
+                         "type" => "object"
+                       }
+                     },
+                     type: "function"
+                   }
+                 ],
+                 model: "gpt-3.5-turbo",
+                 response_model: TestSchemas.SpamPrediction,
+                 messages: [%{role: "user", content: "Classify"}]
+               ]
+
+        %{hello: "prompt"}
+      end)
+
+      Instructor.prepare_prompt(
+        [
+          model: "gpt-3.5-turbo",
+          response_model: TestSchemas.SpamPrediction,
+          messages: [
+            %{role: "user", content: "Classify"}
+          ]
+        ],
+        %{adapter: MockAdapter}
+      )
+    end
+
+    test "all ecto types" do
+      expect(MockAdapter, :prompt, fn params ->
+        assert params == [
+                 tool_choice: %{function: %{name: "Schema"}, type: "function"},
+                 tools: [
+                   %{
+                     function: %{
+                       "description" =>
+                         "Correctly extracted `Schema` with all the required parameters with correct types",
+                       "name" => "Schema",
+                       "parameters" => %{
+                         "description" => "",
+                         "properties" => %{
+                           "array" => %{
+                             "items" => %{"type" => "string"},
+                             "title" => "array",
+                             "type" => "array"
+                           },
+                           "binary_id" => %{"title" => "binary_id", "type" => "string"},
+                           "boolean" => %{"title" => "boolean", "type" => "boolean"},
+                           "date" => %{"format" => "date", "title" => "date", "type" => "string"},
+                           "decimal" => %{
+                             "format" => "float",
+                             "title" => "decimal",
+                             "type" => "number"
+                           },
+                           "float" => %{
+                             "format" => "float",
+                             "title" => "float",
+                             "type" => "number"
+                           },
+                           "integer" => %{"title" => "integer", "type" => "integer"},
+                           "map" => %{
+                             "additionalProperties" => %{},
+                             "title" => "map",
+                             "type" => "object"
+                           },
+                           "map_two" => %{
+                             "additionalProperties" => %{"type" => "string"},
+                             "title" => "map_two",
+                             "type" => "object"
+                           },
+                           "naive_datetime" => %{
+                             "format" => "date-time",
+                             "title" => "naive_datetime",
+                             "type" => "string"
+                           },
+                           "naive_datetime_usec" => %{
+                             "format" => "date-time",
+                             "title" => "naive_datetime_usec",
+                             "type" => "string"
+                           },
+                           "string" => %{"title" => "string", "type" => "string"},
+                           "time" => %{
+                             "pattern" => "^[0-9]{2}:?[0-9]{2}:?[0-9]{2}$",
+                             "title" => "time",
+                             "type" => "string"
+                           },
+                           "time_usec" => %{
+                             "pattern" => "^[0-9]{2}:?[0-9]{2}:?[0-9]{2}.[0-9]{6}$",
+                             "title" => "time_usec",
+                             "type" => "string"
+                           },
+                           "utc_datetime" => %{
+                             "format" => "date-time",
+                             "title" => "utc_datetime",
+                             "type" => "string"
+                           },
+                           "utc_datetime_usec" => %{
+                             "format" => "date-time",
+                             "title" => "utc_datetime_usec",
+                             "type" => "string"
+                           }
+                         },
+                         "required" => [
+                           "array",
+                           "binary_id",
+                           "boolean",
+                           "date",
+                           "decimal",
+                           "float",
+                           "integer",
+                           "map",
+                           "map_two",
+                           "naive_datetime",
+                           "naive_datetime_usec",
+                           "string",
+                           "time",
+                           "time_usec",
+                           "utc_datetime",
+                           "utc_datetime_usec"
+                         ],
+                         "title" => "Instructor.TestSchemas.AllEctoTypes",
+                         "type" => "object"
+                       }
+                     },
+                     type: "function"
+                   }
+                 ],
+                 model: "gpt-3.5-turbo",
+                 response_model: TestSchemas.AllEctoTypes,
+                 messages: [
+                   %{
+                     role: "user",
+                     content:
+                       "What are the types of the following fields: binary_id, integer, float, boolean, string, array, map, map_two, decimal, date, time, time_usec, naive_datetime, naive_datetime_usec, utc_datetime, utc_datetime_usec?"
+                   }
+                 ]
+               ]
+
+        %{hello: "prompt"}
+      end)
+
+      Instructor.prepare_prompt(
+        [
+          model: "gpt-3.5-turbo",
+          response_model: TestSchemas.AllEctoTypes,
+          messages: [
+            %{
+              role: "user",
+              content:
+                "What are the types of the following fields: binary_id, integer, float, boolean, string, array, map, map_two, decimal, date, time, time_usec, naive_datetime, naive_datetime_usec, utc_datetime, utc_datetime_usec?"
+            }
+          ]
+        ],
+        %{adapter: MockAdapter}
+      )
+    end
+  end
+
+  describe "chat_completion/2" do
+    test "prepares prompt and calls api" do
+      MockAdapter
+      |> expect(:prompt, fn _params -> %{hello: "prompt"} end)
+      |> expect(:chat_completion, fn prompt, params, config ->
+        assert prompt == %{hello: "prompt"}
+
+        assert params == [
+                 mode: :tools,
+                 max_retries: 0,
+                 model: "gpt-3.5-turbo",
+                 response_model: %{name: :string, birth_date: :date},
+                 messages: [%{role: "user", content: "Who was the first president of the USA"}]
+               ]
+
+        assert config == %{adapter: MockAdapter}
+
+        {:ok, %{body: body}} = Instructor.HTTPClient.Stub.OpenAI.post(nil, nil)
+        {:ok, body}
+      end)
+
+      assert Instructor.chat_completion(
+               [
                  model: "gpt-3.5-turbo",
                  response_model: %{name: :string, birth_date: :date},
                  messages: [
-                   %{role: "user", content: "Who was the first president of the USA?"}
+                   %{role: "user", content: "Who was the first president of the USA"}
                  ]
-               )
+               ],
+               %{adapter: MockAdapter}
+             )
+    end
+
+    test "retries" do
+      MockAdapter
+      |> expect(:prompt, fn params ->
+        assert params == [
+                 tool_choice: %{function: %{name: "Schema"}, type: "function"},
+                 tools: [
+                   %{
+                     function: %{
+                       "description" =>
+                         "Correctly extracted `Schema` with all the required parameters with correct types",
+                       "name" => "Schema",
+                       "parameters" => %{
+                         "properties" => %{"field" => %{"type" => "string"}},
+                         "required" => ["field"],
+                         "title" => "root",
+                         "type" => "object"
+                       }
+                     },
+                     type: "function"
+                   }
+                 ],
+                 mode: :tools,
+                 model: "gpt-3.5-turbo",
+                 max_retries: 1,
+                 response_model: %{field: :string},
+                 messages: [%{role: "user", content: "What is the field?"}]
+               ]
+      end)
+      |> expect(:chat_completion, fn _prompt, params, _config ->
+        assert params == [
+                 mode: :tools,
+                 model: "gpt-3.5-turbo",
+                 max_retries: 1,
+                 response_model: %{field: :string},
+                 messages: [%{role: "user", content: "What is the field?"}]
+               ]
+
+        {:ok,
+         %{
+           "choices" => [
+             %{
+               "message" => %{
+                 "tool_calls" => [
+                   %{
+                     "id" => "call_DT9fBvVCHWGSf9IeFZnlarIY",
+                     "function" => %{
+                       "name" => "schema",
+                       "arguments" => Jason.encode!(%{wrong_field: "foobar"})
+                     }
+                   }
+                 ]
+               }
+             }
+           ]
+         }}
+      end)
+      |> expect(:prompt, fn params ->
+        assert params == [
+                 tool_choice: %{function: %{name: "Schema"}, type: "function"},
+                 tools: [
+                   %{
+                     function: %{
+                       "description" =>
+                         "Correctly extracted `Schema` with all the required parameters with correct types",
+                       "name" => "Schema",
+                       "parameters" => %{
+                         "properties" => %{"field" => %{"type" => "string"}},
+                         "required" => ["field"],
+                         "title" => "root",
+                         "type" => "object"
+                       }
+                     },
+                     type: "function"
+                   }
+                 ],
+                 max_retries: 0,
+                 mode: :tools,
+                 model: "gpt-3.5-turbo",
+                 response_model: %{field: :string},
+                 messages: [
+                   %{role: "user", content: "What is the field?"},
+                   %{
+                     content:
+                       "{\"function\":{\"arguments\":\"{\\\"wrong_field\\\":\\\"foobar\\\"}\",\"name\":\"schema\"},\"id\":\"call_DT9fBvVCHWGSf9IeFZnlarIY\"}",
+                     tool_calls: [
+                       %{
+                         "function" => %{
+                           "arguments" => "{\"wrong_field\":\"foobar\"}",
+                           "name" => "schema"
+                         },
+                         "id" => "call_DT9fBvVCHWGSf9IeFZnlarIY"
+                       }
+                     ]
+                   },
+                   %{
+                     name: "schema",
+                     role: "tool",
+                     content: "{\"wrong_field\":\"foobar\"}",
+                     tool_call_id: "call_DT9fBvVCHWGSf9IeFZnlarIY"
+                   },
+                   %{
+                     role: "system",
+                     content:
+                       "The response did not pass validation. Please try again and fix the following validation errors:\n\n\nfield - can't be blank\n"
+                   }
+                 ]
+               ]
+      end)
+      |> expect(:chat_completion, fn _prompt, params, _config ->
+        assert params == [
+                 max_retries: 0,
+                 mode: :tools,
+                 model: "gpt-3.5-turbo",
+                 response_model: %{field: :string},
+                 messages: [
+                   %{content: "What is the field?", role: "user"},
+                   %{
+                     content:
+                       "{\"function\":{\"arguments\":\"{\\\"wrong_field\\\":\\\"foobar\\\"}\",\"name\":\"schema\"},\"id\":\"call_DT9fBvVCHWGSf9IeFZnlarIY\"}",
+                     tool_calls: [
+                       %{
+                         "function" => %{
+                           "arguments" => "{\"wrong_field\":\"foobar\"}",
+                           "name" => "schema"
+                         },
+                         "id" => "call_DT9fBvVCHWGSf9IeFZnlarIY"
+                       }
+                     ]
+                   },
+                   %{
+                     name: "schema",
+                     role: "tool",
+                     content: "{\"wrong_field\":\"foobar\"}",
+                     tool_call_id: "call_DT9fBvVCHWGSf9IeFZnlarIY"
+                   },
+                   %{
+                     role: "system",
+                     content:
+                       "The response did not pass validation. Please try again and fix the following validation errors:\n\n\nfield - can't be blank\n"
+                   }
+                 ]
+               ]
+
+        {:ok,
+         %{
+           "choices" => [
+             %{
+               "message" => %{
+                 "tool_calls" => [
+                   %{
+                     "id" => "call_DT9fBvVCHWGSf9IeFZnlarIY",
+                     "function" => %{
+                       "name" => "schema",
+                       "arguments" => Jason.encode!(%{field: 123})
+                     }
+                   }
+                 ]
+               }
+             }
+           ]
+         }}
+      end)
+
+      result =
+        Instructor.chat_completion(
+          [
+            model: "gpt-3.5-turbo",
+            max_retries: 1,
+            response_model: %{field: :string},
+            messages: [
+              %{role: "user", content: "What is the field?"}
+            ]
+          ],
+          %{adapter: MockAdapter}
+        )
+
+      assert {:error,
+              %Ecto.Changeset{
+                valid?: false,
+                errors: [field: {"is invalid", [type: :string, validation: :cast]}]
+              }} = result
     end
   end
 
   describe "consume_response" do
-    @tag adapter: :openai_mock
-    test "returns data if response is valid" do
-      response =
-        TestHelpers.example_openai_response(:tools, %{
-          name: "George Washington",
-          birth_date: ~D[1732-02-22]
-        })
+    test "tools" do
+      response = %{
+        "choices" => [
+          %{
+            "message" => %{
+              "tool_calls" => [
+                %{
+                  "id" => "call_DT9fBvVCHWGSf9IeFZnlarIY",
+                  "type" => "function",
+                  "function" => %{
+                    "arguments" =>
+                      Jason.encode!(%{
+                        name: "George Washington",
+                        birth_date: ~D[1732-02-22]
+                      }),
+                    "name" => "schema"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
 
       assert {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}} =
                Instructor.consume_response(response,
+                 mode: :tools,
+                 response_model: %{name: :string, birth_date: :date}
+               )
+    end
+
+    test "json" do
+      response = %{
+        "choices" => [
+          %{
+            "message" => %{
+              "role" => "assistant",
+              "content" =>
+                Jason.encode!(%{
+                  name: "George Washington",
+                  birth_date: ~D[1732-02-22]
+                })
+            }
+          }
+        ]
+      }
+
+      assert {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}} =
+               Instructor.consume_response(response,
+                 mode: :json,
+                 response_model: %{name: :string, birth_date: :date}
+               )
+    end
+
+    test "md_json" do
+      response = %{
+        "choices" => [
+          %{
+            "message" => %{
+              "role" => "assistant",
+              "content" =>
+                Jason.encode!(%{
+                  name: "George Washington",
+                  birth_date: ~D[1732-02-22]
+                })
+            }
+          }
+        ]
+      }
+
+      assert {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}} =
+               Instructor.consume_response(response,
+                 mode: :json,
                  response_model: %{name: :string, birth_date: :date}
                )
     end
@@ -384,11 +552,29 @@ defmodule InstructorTest do
     end
 
     test "returns new params on failed cast" do
-      response =
-        TestHelpers.example_openai_response(:tools, %{
-          name: 123,
-          birth_date: false
-        })
+      response = %{
+        "choices" => [
+          %{
+            "message" => %{
+              "role" => "assistant",
+              "tool_calls" => [
+                %{
+                  "id" => "call_DT9fBvVCHWGSf9IeFZnlarIY",
+                  "type" => "function",
+                  "function" => %{
+                    "arguments" =>
+                      Jason.encode!(%{
+                        name: 123,
+                        birth_date: false
+                      }),
+                    "name" => "schema"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
 
       assert {:error,
               %Ecto.Changeset{errors: [name: {"is invalid", _}, birth_date: {"is invalid", _}]},

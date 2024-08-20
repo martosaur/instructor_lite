@@ -25,5 +25,8 @@ instructor-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 
+# Test config
+config/config.exs
+
 *.DS_Store
 llama.log

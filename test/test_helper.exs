@@ -1,6 +1,7 @@
-Mox.defmock(InstructorTest.MockOpenAI, for: Instructor.Adapter)
+Mox.defmock(Instructor.HTTPClient.Mock, for: Instructor.HTTPClient)
+Mox.defmock(MockAdapter, for: Instructor.Adapter)
 
 # Exclude the unmocked tests by default
-ExUnit.configure(exclude: [adapter: :llamacpp, adapter: :openai])
+ExUnit.configure(exclude: :integration)
 
 ExUnit.start()
