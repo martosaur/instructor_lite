@@ -3,4 +3,5 @@
 import Config
 
 config :instructor,
-  openai_key: "api_key"
+  openai_key: "api_key",
+  llamacpp_url: "http://localhost:8000/completion"

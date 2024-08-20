@@ -2,6 +2,7 @@ defmodule Instructor.IntegrationTest do
   use ExUnit.Case, async: true
 
   alias Instructor.TestSchemas
+  alias Instructor.Adapters.{OpenAI, Llamacpp}
 
   @moduletag :integration
 
@@ -18,7 +19,8 @@ defmodule Instructor.IntegrationTest do
           ],
           http_client: Req,
           http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :openai_key)
+          api_key: Application.fetch_env!(:instructor, :openai_key),
+          adapter: OpenAI
         )
 
       assert {:ok, %{name: name, birth_date: birth_date}} = result
@@ -42,7 +44,8 @@ defmodule Instructor.IntegrationTest do
           ],
           http_client: Req,
           http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :openai_key)
+          api_key: Application.fetch_env!(:instructor, :openai_key),
+          adapter: OpenAI
         )
 
       assert {:ok, %{class: :spam, score: score}} = result
@@ -64,7 +67,8 @@ defmodule Instructor.IntegrationTest do
           ],
           http_client: Req,
           http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :openai_key)
+          api_key: Application.fetch_env!(:instructor, :openai_key),
+          adapter: OpenAI
         )
 
       assert {:ok,
@@ -104,6 +108,29 @@ defmodule Instructor.IntegrationTest do
       assert %NaiveDateTime{} = naive_datetime_usec
       assert %DateTime{} = utc_datetime
       assert %DateTime{} = utc_datetime_usec
+    end
+  end
+
+  describe "Llamacpp" do
+    test "schemaless" do
+      result =
+        Instructor.chat_completion(
+          [
+            model: "gpt-4o",
+            response_model: %{name: :string, birth_date: :date},
+            messages: [
+              %{role: "user", content: "Who was the first president of the USA?"}
+            ]
+          ],
+          http_client: Req,
+          http_options: [receive_timeout: 60_000],
+          url: Application.fetch_env!(:instructor, :llamacpp_url),
+          adapter: Llamacpp
+        )
+
+      assert {:ok, %{name: name, birth_date: birth_date}} = result
+      assert is_binary(name)
+      assert %Date{} = birth_date
     end
   end
 end

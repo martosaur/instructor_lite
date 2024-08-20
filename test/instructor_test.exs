@@ -47,7 +47,7 @@ defmodule InstructorTest do
             %{role: "user", content: "Who was the first president of the USA"}
           ]
         ],
-        %{adapter: MockAdapter}
+        adapter: MockAdapter
       )
     end
 
@@ -99,7 +99,7 @@ defmodule InstructorTest do
             %{role: "user", content: "Classify"}
           ]
         ],
-        %{adapter: MockAdapter}
+        adapter: MockAdapter
       )
     end
 
@@ -228,7 +228,7 @@ defmodule InstructorTest do
             }
           ]
         ],
-        %{adapter: MockAdapter}
+        adapter: MockAdapter
       )
     end
   end
@@ -248,7 +248,7 @@ defmodule InstructorTest do
                  messages: [%{role: "user", content: "Who was the first president of the USA"}]
                ]
 
-        assert config == %{adapter: MockAdapter}
+        assert config == [adapter: MockAdapter]
 
         {:ok, %{body: body}} = Instructor.HTTPClient.Stub.OpenAI.post(nil, nil)
         {:ok, body}
@@ -262,7 +262,7 @@ defmodule InstructorTest do
                    %{role: "user", content: "Who was the first president of the USA"}
                  ]
                ],
-               %{adapter: MockAdapter}
+               adapter: MockAdapter
              )
     end
 
@@ -439,7 +439,7 @@ defmodule InstructorTest do
               %{role: "user", content: "What is the field?"}
             ]
           ],
-          %{adapter: MockAdapter}
+          adapter: MockAdapter
         )
 
       assert {:error,

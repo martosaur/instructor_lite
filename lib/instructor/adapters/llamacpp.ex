@@ -11,6 +11,10 @@ defmodule Instructor.Adapters.Llamacpp do
 
   @behaviour Instructor.Adapter
 
+  @default_config [
+    http_options: [receive_timeout: 60_000]
+  ]
+
   @doc """
   Run a completion against the llama.cpp server, not the open-ai compliant one.
   This gives you more specific control over the grammar, and the ability to
@@ -31,8 +35,8 @@ defmodule Instructor.Adapters.Llamacpp do
     ...> )
   """
   @impl true
-  def chat_completion(prompt, _params, _config \\ nil) do
-    do_chat_completion(prompt)
+  def chat_completion(prompt, _params, config) do
+    do_chat_completion(prompt, config)
   end
 
   @impl true
@@ -42,7 +46,7 @@ defmodule Instructor.Adapters.Llamacpp do
 
     json_schema = JSONSchema.from_ecto_schema(response_model)
     grammar = GBNF.from_json_schema(json_schema)
-    prompt = apply_chat_template(chat_template(), messages)
+    prompt = apply_chat_template(:mistral_instruct, messages)
 
     %{
       grammar: grammar,
@@ -50,14 +54,12 @@ defmodule Instructor.Adapters.Llamacpp do
     }
   end
 
-  defp do_chat_completion(prompt) do
-    response =
-      Req.post(url(),
-        json: prompt,
-        receive_timeout: 60_000
-      )
+  defp do_chat_completion(prompt, config) do
+    config = Keyword.merge(@default_config, config)
+    http_client = Keyword.fetch!(config, :http_client)
+    options = Keyword.merge(config[:http_options], json: prompt)
 
-    case response do
+    case http_client.post(config[:url], options) do
       {:ok, %{status: 200, body: %{"content" => params}}} ->
         {:ok, to_openai_response(params)}
 
@@ -103,24 +105,5 @@ defmodule Instructor.Adapters.Llamacpp do
       end)
 
     "<s>#{prompt}"
-  end
-
-  defp url() do
-    Keyword.get(config(), :url, "http://localhost:8080/completion")
-  end
-
-  defp chat_template() do
-    Keyword.get(config(), :chat_template, :mistral_instruct)
-  end
-
-  defp config() do
-    base_config = Application.get_env(:instructor, :llamacpp, [])
-
-    default_config = [
-      chat_template: :mistral_instruct,
-      api_url: "http://localhost:8080/completion"
-    ]
-
-    Keyword.merge(default_config, base_config)
   end
 end
