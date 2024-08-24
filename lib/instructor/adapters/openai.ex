@@ -9,25 +9,54 @@ defmodule Instructor.Adapters.OpenAI do
     http_options: [receive_timeout: 60_000]
   ]
 
+  @default_model "gpt-4o-mini"
+
   @impl true
-  def chat_completion(prompt, _params, config) do
-    config = Keyword.merge(@default_config, config)
-    http_client = Keyword.fetch!(config, :http_client)
-    api_key = Keyword.fetch!(config, :api_key)
+  def chat_completion(params, opts) do
+    opts = Keyword.merge(@default_config, opts)
+    http_client = Keyword.fetch!(opts, :http_client)
+    api_key = Keyword.fetch!(opts, :api_key)
 
-    options = Keyword.merge(config[:http_options], json: prompt, auth: {:bearer, api_key})
+    options = Keyword.merge(opts[:http_options], json: params, auth: {:bearer, api_key})
 
-    case http_client.post(config[:url], options) do
+    case http_client.post(opts[:url], options) do
       {:ok, %{status: 200, body: body}} -> {:ok, body}
-      {:ok, %{status: status}} -> {:error, "Unexpected HTTP response code: #{status}"}
+      {:ok, response} -> {:error, response}
       {:error, reason} -> {:error, reason}
     end
   end
 
   @impl true
-  def prompt(params) do
+  def prompt(json_schema, params) do
+    sys_message = [
+      %{
+        role: "system",
+        content: """
+        As a genius expert, your task is to understand the content and provide the parsed objects in json that match json_schema
+        """
+      }
+    ]
+
     params
-    |> Keyword.drop([:response_model, :validation_context, :max_retries, :mode])
-    |> Map.new()
+    |> Map.put_new(:model, @default_model)
+    |> Map.put(:response_format, %{
+      type: "json_schema",
+      json_schema: json_schema
+    })
+    |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)
+  end
+
+  @impl true
+  def from_response(response) do
+    case response do
+      %{"choices" => [%{"message" => %{"content" => json, "refusal" => nil}}]} ->
+        Jason.decode(json)
+
+      %{"choices" => [%{"message" => %{"refusal" => refusal}}]} ->
+        {:error, :refusal, refusal}
+
+      other ->
+        {:error, :unexpected_response, other}
+    end
   end
 end

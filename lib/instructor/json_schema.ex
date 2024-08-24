@@ -36,15 +36,20 @@ defmodule Instructor.JSONSchema do
         _ -> Map.pop(defs, title)
       end
 
-    root
-    |> then(
-      &if map_size(defs) > 0 do
-        Map.put(&1, :"$defs", defs)
-      else
-        &1
-      end
-    )
-    |> Jason.encode!()
+    if map_size(defs) > 0 do
+      %{
+        name: root.title,
+        strict: true,
+        schema: root,
+        "$defs": defs
+      }
+    else
+      %{
+        name: root.title,
+        strict: true,
+        schema: root
+      }
+    end
   end
 
   defp fetch_ecto_schema_doc(ecto_schema) when is_ecto_schema(ecto_schema) do
@@ -132,7 +137,8 @@ defmodule Instructor.JSONSchema do
         type: "object",
         required: required,
         properties: properties,
-        description: fetch_ecto_schema_doc(ecto_schema) || ""
+        description: fetch_ecto_schema_doc(ecto_schema) || "",
+        additionalProperties: false
       }
 
     [schema | bfs_from_ecto_schema(rest, seen_schemas)]
@@ -165,14 +171,15 @@ defmodule Instructor.JSONSchema do
         title: "root",
         type: "object",
         required: required,
-        properties: properties
+        properties: properties,
+        additionalProperties: false
       }
 
     [schema | bfs_from_ecto_schema(rest, seen_schemas)]
   end
 
   defp title_for(ecto_schema) when is_ecto_schema(ecto_schema) do
-    to_string(ecto_schema) |> String.trim_leading("Elixir.")
+    to_string(ecto_schema) |> String.split(".") |> List.last()
   end
 
   # Find all values in a map or list that match a predicate
@@ -203,27 +210,26 @@ defmodule Instructor.JSONSchema do
   defp for_type(:id), do: %{type: "integer"}
   defp for_type(:binary_id), do: %{type: "string"}
   defp for_type(:integer), do: %{type: "integer"}
-  defp for_type(:float), do: %{type: "number", format: "float"}
+  defp for_type(:float), do: %{type: "number"}
   defp for_type(:boolean), do: %{type: "boolean"}
   defp for_type(:string), do: %{type: "string"}
-  # defp for_type(:binary), do: %{type: "unsupported"}
   defp for_type({:array, type}), do: %{type: "array", items: for_type(type)}
   defp for_type(:map), do: %{type: "object", additionalProperties: %{}}
 
   defp for_type({:map, type}),
     do: %{type: "object", additionalProperties: for_type(type)}
 
-  defp for_type(:decimal), do: %{type: "number", format: "float"}
-  defp for_type(:date), do: %{type: "string", format: "date"}
-  defp for_type(:time), do: %{type: "string", pattern: "^[0-9]{2}:?[0-9]{2}:?[0-9]{2}$"}
+  defp for_type(:decimal), do: %{type: "number"}
+  defp for_type(:date), do: %{type: "string"}
+  defp for_type(:time), do: %{type: "string"}
 
   defp for_type(:time_usec),
-    do: %{type: "string", pattern: "^[0-9]{2}:?[0-9]{2}:?[0-9]{2}.[0-9]{6}$"}
+    do: %{type: "string"}
 
-  defp for_type(:naive_datetime), do: %{type: "string", format: "date-time"}
-  defp for_type(:naive_datetime_usec), do: %{type: "string", format: "date-time"}
-  defp for_type(:utc_datetime), do: %{type: "string", format: "date-time"}
-  defp for_type(:utc_datetime_usec), do: %{type: "string", format: "date-time"}
+  defp for_type(:naive_datetime), do: %{type: "string"}
+  defp for_type(:naive_datetime_usec), do: %{type: "string"}
+  defp for_type(:utc_datetime), do: %{type: "string"}
+  defp for_type(:utc_datetime_usec), do: %{type: "string"}
 
   defp for_type({:parameterized, {Ecto.Embedded, %{cardinality: :many, related: related}}})
        when is_ecto_schema(related) do

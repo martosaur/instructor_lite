@@ -2,6 +2,7 @@ defmodule Instructor do
   require Logger
 
   alias Instructor.JSONSchema
+  alias Instructor.Adapters.OpenAI
 
   @external_resource "README.md"
 
@@ -73,19 +74,31 @@ defmodule Instructor do
               valid?: false
           }}
   """
-  @spec chat_completion(Keyword.t(), any()) ::
-          {:ok, Ecto.Schema.t()}
-          | {:error, Ecto.Changeset.t()}
-          | {:error, String.t()}
-  def chat_completion(params, config \\ nil) do
-    params =
-      params
-      |> Keyword.put_new(:max_retries, 0)
-      |> Keyword.put_new(:mode, :tools)
+  def chat_completion(params, opts) do
+    opts = Keyword.put_new(opts, :max_retries, 0)
 
-    response_model = Keyword.fetch!(params, :response_model)
+    params = prepare_prompt(params, opts)
 
-    do_chat_completion(response_model, params, config)
+    do_chat_completion(params, opts)
+  end
+
+  defp do_chat_completion(params, opts) do
+    with {:ok, response} <- opts[:adapter].chat_completion(params, opts) do
+      case consume_response(response, params, opts) do
+        {:error, %Ecto.Changeset{} = cs, new_params} ->
+          if opts[:max_retries] > 0 do
+            do_chat_completion(new_params, Keyword.update!(opts, :max_retries, &(&1 - 1)))
+          else
+            {:error, cs}
+          end
+
+        {:ok, result} ->
+          {:ok, result}
+
+        error ->
+          error
+      end
+    end
   end
 
   @doc """
@@ -198,21 +211,16 @@ defmodule Instructor do
     changeset
   end
 
-  @spec prepare_prompt(Keyword.t()) :: map()
-  def prepare_prompt(params, config \\ nil) do
-    response_model = Keyword.fetch!(params, :response_model)
-    mode = Keyword.get(params, :mode, :tools)
-    params = params_for_mode(mode, response_model, params)
+  def prepare_prompt(params, opts) do
+    opts = Keyword.put_new(opts, :adapter, OpenAI)
+    json_schema = JSONSchema.from_ecto_schema(opts[:response_model])
 
-    adapter(config).prompt(params)
+    opts[:adapter].prompt(json_schema, params)
   end
 
-  @spec consume_response(any(), Keyword.t()) ::
-          {:ok, map()} | {:error, String.t()} | {:error, Ecto.Changeset.t(), Keyword.t()}
-  def consume_response(response, params) do
-    validation_context = Keyword.get(params, :validation_context, %{})
-    response_model = Keyword.fetch!(params, :response_model)
-    mode = Keyword.get(params, :mode, :tools)
+  def consume_response(response, params, opts) do
+    response_model = opts[:response_model]
+    adapter = opts[:adapter]
 
     model =
       if is_ecto_schema(response_model) do
@@ -221,182 +229,38 @@ defmodule Instructor do
         {%{}, response_model}
       end
 
-    with {:valid_json, {:ok, params}} <- {:valid_json, parse_response_for_mode(mode, response)},
-         changeset <- cast_all(model, params),
-         {:validation, %Ecto.Changeset{valid?: true} = changeset, _response} <-
-           {:validation, call_validate(response_model, changeset, validation_context), response} do
-      {:ok, changeset |> Ecto.Changeset.apply_changes()}
-    else
-      {:valid_json, {:error, error}} ->
-        {:error, "Invalid JSON returned from LLM: #{inspect(error)}"}
+    with {:ok, resp_params} <- adapter.from_response(response) do
+      case cast_all(model, resp_params) do
+        %Ecto.Changeset{valid?: true} = cs ->
+          {:ok, Ecto.Changeset.apply_changes(cs)}
 
-      {:validation, changeset, response} ->
-        errors = Instructor.ErrorFormatter.format_errors(changeset)
-
-        params =
-          Keyword.update(params, :messages, [], fn messages ->
-            messages ++
-              echo_response(response) ++
-              [
-                %{
-                  role: "system",
-                  content: """
-                  The response did not pass validation. Please try again and fix the following validation errors:\n
-
-                  #{errors}
-                  """
-                }
-              ]
-          end)
-
-        {:error, changeset, params}
-    end
-  end
-
-  defp do_chat_completion(response_model, params, config) do
-    max_retries = Keyword.get(params, :max_retries)
-    prompt = prepare_prompt(params, config)
-
-    with {:llm, {:ok, response}} <-
-           {:llm, adapter(config).chat_completion(prompt, params, config)},
-         {:ok, result} <- consume_response(response, params) do
-      {:ok, result}
-    else
-      {:llm, {:error, error}} ->
-        {:error, "LLM Adapter Error: #{inspect(error)}"}
-
-      {:error, changeset, new_params} ->
-        if max_retries > 0 do
+        changeset ->
           errors = Instructor.ErrorFormatter.format_errors(changeset)
 
-          Logger.debug("Retrying LLM call for #{inspect(response_model)}:\n\n #{inspect(errors)}",
-            errors: errors
-          )
+          do_better = [
+            echo_response(resp_params),
+            %{
+              role: "system",
+              content: """
+              The response did not pass validation. Please try again and fix the following validation errors:\n
 
-          params = Keyword.put(new_params, :max_retries, max_retries - 1)
-
-          do_chat_completion(response_model, params, config)
-        else
-          {:error, changeset}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
-
-      e ->
-        {:error, e}
-    end
-  end
-
-  defp parse_response_for_mode(:md_json, %{"choices" => [%{"message" => %{"content" => content}}]}),
-       do: Jason.decode(content)
-
-  defp parse_response_for_mode(:json, %{"choices" => [%{"message" => %{"content" => content}}]}),
-    do: Jason.decode(content)
-
-  defp parse_response_for_mode(:tools, %{
-         "choices" => [
-           %{"message" => %{"tool_calls" => [%{"function" => %{"arguments" => args}}]}}
-         ]
-       }),
-       do: Jason.decode(args)
-
-  defp echo_response(%{
-         "choices" => [
-           %{
-             "message" =>
-               %{
-                 "tool_calls" => [
-                   %{"id" => tool_call_id, "function" => %{"name" => name, "arguments" => args}} =
-                     function
-                 ]
-               } = message
-           }
-         ]
-       }) do
-    [
-      Map.put(message, "content", function |> Jason.encode!())
-      |> Map.new(fn {k, v} -> {String.to_atom(k), v} end),
-      %{
-        role: "tool",
-        tool_call_id: tool_call_id,
-        name: name,
-        content: args
-      }
-    ]
-  end
-
-  defp params_for_mode(mode, response_model, params) do
-    json_schema = JSONSchema.from_ecto_schema(response_model)
-
-    params =
-      params
-      |> Keyword.update(:messages, [], fn messages ->
-        decoded_json_schema = Jason.decode!(json_schema)
-
-        additional_definitions =
-          if defs = decoded_json_schema["$defs"] do
-            "\nHere are some more definitions to adhere too:\n" <> Jason.encode!(defs)
-          else
-            ""
-          end
-
-        sys_message = %{
-          role: "system",
-          content: """
-          As a genius expert, your task is to understand the content and provide the parsed objects in json that match the following json_schema:\n
-          #{json_schema}
-
-          #{additional_definitions}
-          """
-        }
-
-        case mode do
-          :md_json ->
-            [sys_message | messages] ++
-              [
-                %{
-                  role: "assistant",
-                  content: "Here is the perfectly correctly formatted JSON\n```json"
-                }
-              ]
-
-          :json ->
-            [sys_message | messages]
-
-          :tools ->
-            messages
-        end
-      end)
-
-    case mode do
-      :md_json ->
-        params |> Keyword.put(:stop, "```")
-
-      :json ->
-        params
-        |> Keyword.put(:response_format, %{
-          type: "json_object"
-        })
-
-      :tools ->
-        params
-        |> Keyword.put(:tools, [
-          %{
-            type: "function",
-            function: %{
-              "description" =>
-                "Correctly extracted `Schema` with all the required parameters with correct types",
-              "name" => "Schema",
-              "parameters" => json_schema |> Jason.decode!()
+              #{errors}
+              """
             }
-          }
-        ])
-        |> Keyword.put(:tool_choice, %{
-          type: "function",
-          function: %{name: "Schema"}
-        })
+          ]
+
+          new_params = Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
+
+          {:error, changeset, new_params}
+      end
     end
+  end
+
+  defp echo_response(params) do
+    %{
+      role: "assistant",
+      content: Jason.encode!(params)
+    }
   end
 
   defp call_validate(response_model, changeset, context) do
@@ -414,6 +278,4 @@ defmodule Instructor do
         changeset
     end
   end
-
-  defp adapter(config), do: Keyword.get(config, :adapter, Instructor.Adapters.OpenAI)
 end

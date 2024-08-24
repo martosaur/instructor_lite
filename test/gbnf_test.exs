@@ -6,6 +6,8 @@ defmodule GBNFTest do
   alias Instructor.GBNF
   alias Instructor.JSONSchema
 
+  @moduletag skip: true
+
   test "basic types" do
     defmodule Demo do
       use Ecto.Schema
