@@ -215,7 +215,7 @@ defmodule Instructor do
     opts = Keyword.put_new(opts, :adapter, OpenAI)
     json_schema = JSONSchema.from_ecto_schema(opts[:response_model])
 
-    opts[:adapter].prompt(json_schema, params)
+    opts[:adapter].initial_prompt(json_schema, params)
   end
 
   def consume_response(response, params, opts) do
@@ -236,31 +236,11 @@ defmodule Instructor do
 
         changeset ->
           errors = Instructor.ErrorFormatter.format_errors(changeset)
-
-          do_better = [
-            echo_response(resp_params),
-            %{
-              role: "system",
-              content: """
-              The response did not pass validation. Please try again and fix the following validation errors:\n
-
-              #{errors}
-              """
-            }
-          ]
-
-          new_params = Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
+          new_params = adapter.retry_prompt(params, resp_params, errors)
 
           {:error, changeset, new_params}
       end
     end
-  end
-
-  defp echo_response(params) do
-    %{
-      role: "assistant",
-      content: Jason.encode!(params)
-    }
   end
 
   defp call_validate(response_model, changeset, context) do

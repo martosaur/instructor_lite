@@ -27,7 +27,7 @@ defmodule Instructor.Adapters.OpenAI do
   end
 
   @impl true
-  def prompt(json_schema, params) do
+  def initial_prompt(json_schema, params) do
     sys_message = [
       %{
         role: "system",
@@ -44,6 +44,23 @@ defmodule Instructor.Adapters.OpenAI do
       json_schema: json_schema
     })
     |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)
+  end
+
+  @impl true
+  def retry_prompt(params, resp_params, errors) do
+    do_better = [
+      %{role: "assistant", content: Jason.encode!(resp_params)},
+      %{
+        role: "system",
+        content: """
+        The response did not pass validation. Please try again and fix the following validation errors:\n
+
+        #{errors}
+        """
+      }
+    ]
+
+    Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
   end
 
   @impl true

@@ -9,7 +9,7 @@ defmodule InstructorTest do
     test "calls adapter callback with json_schema" do
       params = %{messages: [%{role: "user", content: "Who was the first president of the USA"}]}
 
-      expect(MockAdapter, :prompt, fn json_schema, p ->
+      expect(MockAdapter, :initial_prompt, fn json_schema, p ->
         assert %{name: _, schema: _} = json_schema
         assert params == p
 
@@ -58,33 +58,24 @@ defmodule InstructorTest do
     end
 
     test "returns new params on changeset mismatch" do
-      expect(MockAdapter, :from_response, fn _response ->
-        {:ok, %{name: "George Washington", birth_date: 17_320_222}}
+      params = %{messages: []}
+      resp_params = %{name: "George Washington", birth_date: 17_320_222}
+
+      MockAdapter
+      |> expect(:from_response, fn _response -> {:ok, resp_params} end)
+      |> expect(:retry_prompt, fn p, r, errors ->
+        assert params == p
+        assert resp_params == r
+        assert errors == "birth_date - is invalid"
+
+        "new_params"
       end)
 
-      assert {:error, %Ecto.Changeset{valid?: false}, new_params} =
-               Instructor.consume_response(:foo, %{messages: []},
+      assert {:error, %Ecto.Changeset{valid?: false}, "new_params"} =
+               Instructor.consume_response(:foo, params,
                  adapter: MockAdapter,
                  response_model: %{name: :string, birth_date: :date}
                )
-
-      assert new_params == %{
-               messages: [
-                 %{
-                   role: "assistant",
-                   content: "{\"name\":\"George Washington\",\"birth_date\":17320222}"
-                 },
-                 %{
-                   role: "system",
-                   content: """
-                   The response did not pass validation. Please try again and fix the following validation errors:
-
-
-                   birth_date - is invalid
-                   """
-                 }
-               ]
-             }
     end
   end
 
@@ -101,7 +92,7 @@ defmodule InstructorTest do
       ]
 
       MockAdapter
-      |> expect(:prompt, fn _json_schema, _params -> params end)
+      |> expect(:initial_prompt, fn _json_schema, _params -> params end)
       |> expect(:chat_completion, fn p, opts ->
         assert params == p
         assert opts == [{:max_retries, 0} | options]
@@ -133,7 +124,7 @@ defmodule InstructorTest do
       ]
 
       MockAdapter
-      |> expect(:prompt, fn _json_schema, _params -> params end)
+      |> expect(:initial_prompt, fn _json_schema, _params -> params end)
       |> expect(:chat_completion, fn _p, _opts -> {:ok, :response_body} end)
       |> expect(:from_response, fn :response_body ->
         {:ok,
@@ -142,7 +133,8 @@ defmodule InstructorTest do
            birth_date: 17_320_222
          }}
       end)
-      |> expect(:chat_completion, fn _p, _opts -> {:ok, :response_body} end)
+      |> expect(:retry_prompt, fn _params, _resp_params, _errors -> :new_prompt end)
+      |> expect(:chat_completion, fn :new_prompt, _opts -> {:ok, :response_body} end)
       |> expect(:from_response, fn :response_body ->
         {:ok,
          %{
@@ -168,7 +160,7 @@ defmodule InstructorTest do
       ]
 
       MockAdapter
-      |> expect(:prompt, fn _json_schema, _params -> params end)
+      |> expect(:initial_prompt, fn _json_schema, _params -> params end)
       |> expect(:chat_completion, fn _p, _opts -> {:ok, :response_body} end)
       |> expect(:from_response, fn :response_body ->
         {:ok,
@@ -177,7 +169,8 @@ defmodule InstructorTest do
            birth_date: 17_320_222
          }}
       end)
-      |> expect(:chat_completion, fn _p, _opts -> {:ok, :response_body} end)
+      |> expect(:retry_prompt, fn _params, _resp_params, _errors -> :new_prompt end)
+      |> expect(:chat_completion, fn :new_prompt, _opts -> {:ok, :response_body} end)
       |> expect(:from_response, fn :response_body ->
         {:ok,
          %{
@@ -185,6 +178,7 @@ defmodule InstructorTest do
            birth_date: 17_320_222
          }}
       end)
+      |> expect(:retry_prompt, fn :new_prompt, _resp_params, _errors -> :foo end)
 
       assert {:error, %Ecto.Changeset{valid?: false}} = Instructor.chat_completion(%{}, options)
     end
@@ -198,7 +192,7 @@ defmodule InstructorTest do
       ]
 
       MockAdapter
-      |> expect(:prompt, fn _json_schema, _params -> :params end)
+      |> expect(:initial_prompt, fn _json_schema, _params -> :params end)
       |> expect(:chat_completion, fn :params, _opts -> {:error, :timeout} end)
 
       assert {:error, :timeout} = Instructor.chat_completion(%{}, options)
@@ -213,7 +207,7 @@ defmodule InstructorTest do
       ]
 
       MockAdapter
-      |> expect(:prompt, fn _json_schema, _params -> :params end)
+      |> expect(:initial_prompt, fn _json_schema, _params -> :params end)
       |> expect(:chat_completion, fn :params, _opts -> {:ok, :response_body} end)
       |> expect(:from_response, fn :response_body -> {:error, :unexpected_response} end)
 

@@ -8,11 +8,11 @@ defmodule Instructor.Adapters.OpenAITest do
 
   setup :verify_on_exit!
 
-  describe "prompt/2" do
+  describe "initial_prompt/2" do
     test "adds structured response parameters" do
       params = %{}
 
-      assert OpenAI.prompt(:json_schema, params) == %{
+      assert OpenAI.initial_prompt(:json_schema, params) == %{
                messages: [
                  %{
                    role: "system",
@@ -22,6 +22,24 @@ defmodule Instructor.Adapters.OpenAITest do
                ],
                model: "gpt-4o-mini",
                response_format: %{type: "json_schema", json_schema: :json_schema}
+             }
+    end
+  end
+
+  describe "retry_prompt/3" do
+    test "adds new chat entries" do
+      params = %{messages: [], model: "gpt-4o-mini"}
+
+      assert OpenAI.retry_prompt(params, %{foo: "bar"}, "list of errors") == %{
+               messages: [
+                 %{content: "{\"foo\":\"bar\"}", role: "assistant"},
+                 %{
+                   role: "system",
+                   content:
+                     "The response did not pass validation. Please try again and fix the following validation errors:\n\n\nlist of errors\n"
+                 }
+               ],
+               model: "gpt-4o-mini"
              }
     end
   end
