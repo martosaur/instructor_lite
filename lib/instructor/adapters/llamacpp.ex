@@ -49,12 +49,25 @@ defmodule Instructor.Adapters.Llamacpp do
   end
 
   @impl true
-  def initial_prompt(json_schema, params) do
+  def initial_prompt(params, opts) do
+    mandatory_part = """
+    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
+    """
+
+    optional_notes =
+      if notes = opts[:notes] do
+        """
+        Additional notes on the schema:
+
+        #{notes}
+        """
+      else
+        ""
+      end
+
     params
-    |> Map.put_new(:json_schema, json_schema[:schema])
-    |> Map.put_new(:system_prompt, """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json_schema
-    """)
+    |> Map.put_new(:json_schema, opts[:json_schema][:schema])
+    |> Map.put_new(:system_prompt, mandatory_part <> optional_notes)
   end
 
   @impl true

@@ -12,12 +12,17 @@ defmodule Instructor.Adapters.OpenAITest do
     test "adds structured response parameters" do
       params = %{}
 
-      assert OpenAI.initial_prompt(:json_schema, params) == %{
+      assert OpenAI.initial_prompt(params, json_schema: :json_schema, notes: "Explanation") == %{
                messages: [
                  %{
                    role: "system",
-                   content:
-                     "As a genius expert, your task is to understand the content and provide the parsed objects in json that match json_schema\n"
+                   content: """
+                   As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
+
+                   Additional notes on the schema:
+
+                   Explanation
+                   """
                  }
                ],
                model: "gpt-4o-mini",

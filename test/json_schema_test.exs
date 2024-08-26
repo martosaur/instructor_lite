@@ -61,26 +61,6 @@ defmodule JSONSchemaTest do
     assert json_schema == expected_json_schema
   end
 
-  @tag skip: true
-  test "includes documentation" do
-    json_schema = JSONSchema.from_ecto_schema(InstructorTest.DemoWithDocumentation)
-
-    expected_json_schema = %{
-      name: "DemoWithDocumentation",
-      strict: true,
-      schema: %{
-        description: "Hello World\n",
-        required: [:string],
-        title: "DemoWithDocumentation",
-        type: "object",
-        additionalProperties: false,
-        properties: %{string: %{type: "string", title: "string"}}
-      }
-    }
-
-    assert json_schema == expected_json_schema
-  end
-
   test "basic types" do
     defmodule Demo do
       use Ecto.Schema

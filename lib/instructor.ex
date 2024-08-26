@@ -212,10 +212,16 @@ defmodule Instructor do
   end
 
   def prepare_prompt(params, opts) do
-    opts = Keyword.put_new(opts, :adapter, OpenAI)
-    json_schema = JSONSchema.from_ecto_schema(opts[:response_model])
+    opts =
+      opts
+      |> Keyword.put_new(:adapter, OpenAI)
+      |> Keyword.put_new_lazy(:notes, fn ->
+        model = opts[:response_model]
+        if is_atom(model) and function_exported?(model, :notes, 0), do: model.notes()
+      end)
+      |> Keyword.put_new(:json_schema, JSONSchema.from_ecto_schema(opts[:response_model]))
 
-    opts[:adapter].initial_prompt(json_schema, params)
+    opts[:adapter].initial_prompt(params, opts)
   end
 
   def consume_response(response, params, opts) do

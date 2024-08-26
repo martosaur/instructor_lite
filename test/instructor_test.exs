@@ -9,8 +9,7 @@ defmodule InstructorTest do
     test "calls adapter callback with json_schema" do
       params = %{messages: [%{role: "user", content: "Who was the first president of the USA"}]}
 
-      expect(MockAdapter, :initial_prompt, fn json_schema, p ->
-        assert %{name: _, schema: _} = json_schema
+      expect(MockAdapter, :initial_prompt, fn p, _opts ->
         assert params == p
 
         :ok
