@@ -219,7 +219,15 @@ defmodule Instructor do
         model = opts[:response_model]
         if is_atom(model) and function_exported?(model, :notes, 0), do: model.notes()
       end)
-      |> Keyword.put_new(:json_schema, JSONSchema.from_ecto_schema(opts[:response_model]))
+      |> Keyword.put_new_lazy(:json_schema, fn ->
+        model = opts[:response_model]
+
+        if is_atom(model) and function_exported?(model, :json_schema, 0) do
+          model.json_schema()
+        else
+          JSONSchema.from_ecto_schema(model)
+        end
+      end)
 
     opts[:adapter].initial_prompt(params, opts)
   end

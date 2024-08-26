@@ -1,6 +1,7 @@
 defmodule Instructor.TestSchemas do
   defmodule SpamPrediction do
     use Ecto.Schema
+    use Instructor.Instruction
 
     @primary_key false
     embedded_schema do
@@ -11,6 +12,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule AllEctoTypes do
     use Ecto.Schema
+    use Instructor.Instruction
 
     # Be explicit about all fields in this test
     @primary_key false

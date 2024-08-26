@@ -282,6 +282,38 @@ defmodule JSONSchemaTest do
     assert json_schema == expected_json_schema
   end
 
+  test "enum" do
+    defmodule SpamPrediction do
+      use Ecto.Schema
+
+      @primary_key false
+      embedded_schema do
+        field(:class, Ecto.Enum, values: [:spam, :not_spam])
+        field(:score, :float)
+      end
+    end
+
+    json_schema = JSONSchema.from_ecto_schema(SpamPrediction)
+
+    expected_json_schema = %{
+      name: "SpamPrediction",
+      strict: true,
+      schema: %{
+        type: "object",
+        description: "",
+        title: "SpamPrediction",
+        required: [:class, :score],
+        additionalProperties: false,
+        properties: %{
+          class: %{type: "string", enum: [:spam, :not_spam], title: "class"},
+          score: %{type: "number", title: "score"}
+        }
+      }
+    }
+
+    assert json_schema == expected_json_schema
+  end
+
   test "handles ecto types with embeds recursively" do
     schema = %{
       value:

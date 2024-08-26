@@ -9,8 +9,9 @@ defmodule InstructorTest do
     test "calls adapter callback with json_schema" do
       params = %{messages: [%{role: "user", content: "Who was the first president of the USA"}]}
 
-      expect(MockAdapter, :initial_prompt, fn p, _opts ->
+      expect(MockAdapter, :initial_prompt, fn p, opts ->
         assert params == p
+        assert opts[:json_schema]
 
         :ok
       end)
@@ -20,6 +21,25 @@ defmodule InstructorTest do
                  model: "gpt-3.5-turbo",
                  response_model: %{name: :string, birth_date: :date},
                  adapter: MockAdapter
+               )
+    end
+
+    test "json_schema is overridable in opts" do
+      params = %{messages: [%{role: "user", content: "Who was the first president of the USA"}]}
+
+      expect(MockAdapter, :initial_prompt, fn p, opts ->
+        assert params == p
+        assert opts[:json_schema] == :json_schema
+
+        :ok
+      end)
+
+      assert :ok =
+               Instructor.prepare_prompt(params,
+                 model: "gpt-3.5-turbo",
+                 response_model: %{name: :string, birth_date: :date},
+                 adapter: MockAdapter,
+                 json_schema: :json_schema
                )
     end
   end
