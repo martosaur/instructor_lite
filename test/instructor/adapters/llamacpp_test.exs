@@ -26,11 +26,11 @@ defmodule Instructor.Adapters.LlamacppTest do
     end
   end
 
-  describe "retry_prompt/3" do
+  describe "retry_prompt/4" do
     test "appends to prompt string" do
       params = %{prompt: "Please give me test data"}
 
-      assert Llamacpp.retry_prompt(params, %{foo: "bar"}, "list of errors") == %{
+      assert Llamacpp.retry_prompt(params, %{foo: "bar"}, "list of errors", nil) == %{
                prompt: """
                Please give me test data
                Your previous response:

@@ -71,7 +71,7 @@ defmodule Instructor.Adapters.Llamacpp do
   end
 
   @impl true
-  def retry_prompt(params, resp_params, errors) do
+  def retry_prompt(params, resp_params, errors, _response) do
     do_better = """
     Your previous response:
 

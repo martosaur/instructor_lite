@@ -250,7 +250,7 @@ defmodule Instructor do
 
         changeset ->
           errors = Instructor.ErrorFormatter.format_errors(changeset)
-          new_params = adapter.retry_prompt(params, resp_params, errors)
+          new_params = adapter.retry_prompt(params, resp_params, errors, response)
 
           {:error, changeset, new_params}
       end

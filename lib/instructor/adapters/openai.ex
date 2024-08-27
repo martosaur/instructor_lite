@@ -59,7 +59,7 @@ defmodule Instructor.Adapters.OpenAI do
   end
 
   @impl true
-  def retry_prompt(params, resp_params, errors) do
+  def retry_prompt(params, resp_params, errors, _response) do
     do_better = [
       %{role: "assistant", content: Jason.encode!(resp_params)},
       %{

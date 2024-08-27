@@ -82,10 +82,11 @@ defmodule InstructorTest do
 
       MockAdapter
       |> expect(:from_response, fn _response -> {:ok, resp_params} end)
-      |> expect(:retry_prompt, fn p, r, errors ->
+      |> expect(:retry_prompt, fn p, r, errors, response ->
         assert params == p
         assert resp_params == r
         assert errors == "birth_date - is invalid"
+        assert response == :foo
 
         "new_params"
       end)
@@ -152,7 +153,7 @@ defmodule InstructorTest do
            birth_date: 17_320_222
          }}
       end)
-      |> expect(:retry_prompt, fn _params, _resp_params, _errors -> :new_prompt end)
+      |> expect(:retry_prompt, fn _params, _resp_params, _errors, _response -> :new_prompt end)
       |> expect(:chat_completion, fn :new_prompt, _opts -> {:ok, :response_body} end)
       |> expect(:from_response, fn :response_body ->
         {:ok,
@@ -188,7 +189,7 @@ defmodule InstructorTest do
            birth_date: 17_320_222
          }}
       end)
-      |> expect(:retry_prompt, fn _params, _resp_params, _errors -> :new_prompt end)
+      |> expect(:retry_prompt, fn _params, _resp_params, _errors, _response -> :new_prompt end)
       |> expect(:chat_completion, fn :new_prompt, _opts -> {:ok, :response_body} end)
       |> expect(:from_response, fn :response_body ->
         {:ok,
@@ -197,7 +198,7 @@ defmodule InstructorTest do
            birth_date: 17_320_222
          }}
       end)
-      |> expect(:retry_prompt, fn :new_prompt, _resp_params, _errors -> :foo end)
+      |> expect(:retry_prompt, fn :new_prompt, _resp_params, _errors, _response -> :foo end)
 
       assert {:error, %Ecto.Changeset{valid?: false}} = Instructor.chat_completion(%{}, options)
     end

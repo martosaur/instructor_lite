@@ -31,11 +31,11 @@ defmodule Instructor.Adapters.OpenAITest do
     end
   end
 
-  describe "retry_prompt/3" do
+  describe "retry_prompt/4" do
     test "adds new chat entries" do
       params = %{messages: [], model: "gpt-4o-mini"}
 
-      assert OpenAI.retry_prompt(params, %{foo: "bar"}, "list of errors") == %{
+      assert OpenAI.retry_prompt(params, %{foo: "bar"}, "list of errors", nil) == %{
                messages: [
                  %{content: "{\"foo\":\"bar\"}", role: "assistant"},
                  %{
