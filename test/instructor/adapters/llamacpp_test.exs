@@ -10,10 +10,7 @@ defmodule Instructor.Adapters.LlamacppTest do
 
   describe "initial_prompt/2" do
     test "adds structured response parameters" do
-      params = %{}
-      json_schema = %{schema: :json_schema}
-
-      assert Llamacpp.initial_prompt(params, json_schema: json_schema, notes: "Explanation") == %{
+      assert Llamacpp.initial_prompt(%{}, json_schema: :json_schema, notes: "Explanation") == %{
                json_schema: :json_schema,
                system_prompt: """
                As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema

@@ -66,7 +66,7 @@ defmodule Instructor.Adapters.Llamacpp do
       end
 
     params
-    |> Map.put_new(:json_schema, opts[:json_schema][:schema])
+    |> Map.put_new(:json_schema, opts[:json_schema])
     |> Map.put_new(:system_prompt, mandatory_part <> optional_notes)
   end
 
