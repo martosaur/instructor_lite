@@ -90,5 +90,39 @@ defmodule Instructor.TestSchemas do
       field(:value, :integer)
       embeds_one(:next, LinkedList)
     end
+
+    # @impl Instructor.Instruction
+    # def validate_changeset(cs, opts) do
+    #   max_items = Keyword.fetch!(opts, :max_list_items)
+
+    #   case do_validate(max_items, cs) do
+    #     :ok -> cs
+    #     :overflow -> Ecto.Changeset.add_error(cs, :next, "Too many items in the list!")
+    #   end
+    # end
+
+    # defp do_validate(0, %{changes: %{next: %{}}}), do: :overflow
+    # defp do_validate(n, %{changes: %{next: %{} = next}}), do: do_validate(n - 1, next)
+    # defp do_validate(_, _), do: :ok
+  end
+
+  defmodule SecondGuess do
+    use Ecto.Schema
+    use Instructor.Instruction
+
+    @primary_key false
+    embedded_schema do
+      field(:guess, Ecto.Enum, values: [:heads, :tails])
+    end
+
+    @impl Instructor.Instruction
+    def validate_changeset(cs, opts) do
+      target = opts[:guess]
+
+      case Ecto.Changeset.fetch_field!(cs, :guess) do
+        ^target -> cs
+        _ -> Ecto.Changeset.add_error(cs, :guess, "Wrong! Try again")
+      end
+    end
   end
 end

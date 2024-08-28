@@ -18,15 +18,23 @@ defmodule Instructor.Adapters.OpenAITest do
                    role: "system",
                    content: """
                    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
-
-                   Additional notes on the schema:
-
-                   Explanation
                    """
                  }
                ],
                model: "gpt-4o-mini",
-               response_format: %{type: "json_schema", json_schema: :json_schema}
+               response_format: %{
+                 type: "json_schema",
+                 json_schema: %{
+                   name: "schema",
+                   strict: true,
+                   description: """
+                   Additional notes on the schema:
+
+                   Explanation
+                   """,
+                   schema: :json_schema
+                 }
+               }
              }
     end
   end

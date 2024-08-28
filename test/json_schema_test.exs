@@ -8,18 +8,14 @@ defmodule JSONSchemaTest do
     json_schema = JSONSchema.from_ecto_schema(TestSchemas.Child)
 
     expected_json_schema = %{
-      name: "Child",
-      strict: true,
-      schema: %{
-        type: "object",
-        description: "",
-        title: "Child",
-        required: [:id, :name],
-        additionalProperties: false,
-        properties: %{
-          name: %{type: "string", title: "name"},
-          id: %{type: "integer", title: "id"}
-        }
+      type: "object",
+      description: "",
+      title: "Child",
+      required: [:id, :name],
+      additionalProperties: false,
+      properties: %{
+        name: %{type: "string"},
+        id: %{type: "integer"}
       }
     }
 
@@ -30,16 +26,12 @@ defmodule JSONSchemaTest do
     json_schema = JSONSchema.from_ecto_schema(TestSchemas.Embedded)
 
     expected_json_schema = %{
-      name: "Embedded",
-      strict: true,
-      schema: %{
-        description: "",
-        required: [:name],
-        title: "Embedded",
-        type: "object",
-        additionalProperties: false,
-        properties: %{name: %{type: "string", title: "name"}}
-      }
+      description: "",
+      required: [:name],
+      title: "Embedded",
+      type: "object",
+      additionalProperties: false,
+      properties: %{name: %{type: "string"}}
     }
 
     assert json_schema == expected_json_schema
@@ -49,48 +41,44 @@ defmodule JSONSchemaTest do
     json_schema = JSONSchema.from_ecto_schema(TestSchemas.AllEctoTypes)
 
     expected_json_schema = %{
-      name: "AllEctoTypes",
-      schema: %{
-        type: "object",
-        description: "",
-        title: "AllEctoTypes",
-        required: [
-          :array,
-          :binary_id,
-          :boolean,
-          :date,
-          :decimal,
-          :float,
-          :integer,
-          :naive_datetime,
-          :naive_datetime_usec,
-          :string,
-          :time,
-          :time_usec,
-          :utc_datetime,
-          :utc_datetime_usec
-        ],
-        additionalProperties: false,
-        properties: %{
-          binary_id: %{type: "string", title: "binary_id"},
-          integer: %{type: "integer", title: "integer"},
-          date: %{type: "string", title: "date"},
-          float: %{type: "number", title: "float"},
-          time: %{type: "string", title: "time"},
-          string: %{type: "string", title: "string"},
-          # map: %{type: "object", title: "map", additionalProperties: %{}},
-          boolean: %{type: "boolean", title: "boolean"},
-          array: %{type: "array", title: "array", items: %{type: "string"}},
-          decimal: %{type: "number", title: "decimal"},
-          # map_two: %{type: "object", title: "map_two", additionalProperties: %{type: "string"}},
-          time_usec: %{type: "string", title: "time_usec"},
-          naive_datetime: %{type: "string", title: "naive_datetime"},
-          naive_datetime_usec: %{type: "string", title: "naive_datetime_usec"},
-          utc_datetime: %{type: "string", title: "utc_datetime"},
-          utc_datetime_usec: %{type: "string", title: "utc_datetime_usec"}
-        }
-      },
-      strict: true
+      type: "object",
+      description: "",
+      title: "AllEctoTypes",
+      required: [
+        :array,
+        :binary_id,
+        :boolean,
+        :date,
+        :decimal,
+        :float,
+        :integer,
+        :naive_datetime,
+        :naive_datetime_usec,
+        :string,
+        :time,
+        :time_usec,
+        :utc_datetime,
+        :utc_datetime_usec
+      ],
+      additionalProperties: false,
+      properties: %{
+        binary_id: %{type: "string"},
+        integer: %{type: "integer"},
+        date: %{type: "string"},
+        float: %{type: "number"},
+        time: %{type: "string"},
+        string: %{type: "string"},
+        # map: %{type: "object", additionalProperties: %{}},
+        boolean: %{type: "boolean"},
+        array: %{type: "array", items: %{type: "string"}},
+        decimal: %{type: "number"},
+        # map_two: %{type: "object", additionalProperties: %{type: "string"}},
+        time_usec: %{type: "string"},
+        naive_datetime: %{type: "string"},
+        naive_datetime_usec: %{type: "string"},
+        utc_datetime: %{type: "string"},
+        utc_datetime_usec: %{type: "string"}
+      }
     }
 
     assert json_schema == expected_json_schema
@@ -100,16 +88,12 @@ defmodule JSONSchemaTest do
     json_schema = JSONSchema.from_ecto_schema(TestSchemas.WithEmbedded)
 
     expected_json_schema = %{
-      name: "WithEmbedded",
-      schema: %{
-        additionalProperties: false,
-        description: "",
-        properties: %{embedded: %{title: "embedded", "$ref": "#/$defs/Embedded"}},
-        required: [:embedded],
-        title: "WithEmbedded",
-        type: "object"
-      },
-      strict: true,
+      additionalProperties: false,
+      description: "",
+      properties: %{embedded: %{"$ref": "#/$defs/Embedded"}},
+      required: [:embedded],
+      title: "WithEmbedded",
+      type: "object",
       "$defs": %{
         "Embedded" => %{
           type: "object",
@@ -118,7 +102,7 @@ defmodule JSONSchemaTest do
           required: [:name],
           additionalProperties: false,
           properties: %{
-            name: %{type: "string", title: "name"}
+            name: %{type: "string"}
           }
         }
       }
@@ -139,21 +123,17 @@ defmodule JSONSchemaTest do
           required: [:id, :name],
           additionalProperties: false,
           properties: %{
-            id: %{type: "integer", title: "id"},
-            name: %{type: "string", title: "name"}
+            id: %{type: "integer"},
+            name: %{type: "string"}
           }
         }
       },
-      name: "WithChild",
-      schema: %{
-        type: "object",
-        description: "",
-        title: "WithChild",
-        required: [:child, :id],
-        additionalProperties: false,
-        properties: %{id: %{type: "integer", title: "id"}, child: %{"$ref": "#/$defs/Child"}}
-      },
-      strict: true
+      type: "object",
+      description: "",
+      title: "WithChild",
+      required: [:child, :id],
+      additionalProperties: false,
+      properties: %{id: %{type: "integer"}, child: %{"$ref": "#/$defs/Child"}}
     }
 
     assert json_schema == expected_json_schema
@@ -171,24 +151,20 @@ defmodule JSONSchemaTest do
           required: [:id, :name],
           additionalProperties: false,
           properties: %{
-            id: %{type: "integer", title: "id"},
-            name: %{type: "string", title: "name"}
+            id: %{type: "integer"},
+            name: %{type: "string"}
           }
         }
       },
-      name: "WithChildren",
-      schema: %{
-        type: "object",
-        description: "",
-        title: "WithChildren",
-        required: [:children, :id],
-        additionalProperties: false,
-        properties: %{
-          id: %{type: "integer", title: "id"},
-          children: %{type: "array", title: "Child", items: %{"$ref": "#/$defs/Child"}}
-        }
-      },
-      strict: true
+      type: "object",
+      description: "",
+      title: "WithChildren",
+      required: [:children, :id],
+      additionalProperties: false,
+      properties: %{
+        id: %{type: "integer"},
+        children: %{type: "array", items: %{"$ref": "#/$defs/Child"}}
+      }
     }
 
     assert json_schema == expected_json_schema
@@ -198,18 +174,14 @@ defmodule JSONSchemaTest do
     json_schema = JSONSchema.from_ecto_schema(TestSchemas.SpamPrediction)
 
     expected_json_schema = %{
-      name: "SpamPrediction",
-      strict: true,
-      schema: %{
-        type: "object",
-        description: "",
-        title: "SpamPrediction",
-        required: [:class, :score],
-        additionalProperties: false,
-        properties: %{
-          class: %{type: "string", enum: [:spam, :not_spam], title: "class"},
-          score: %{type: "number", title: "score"}
-        }
+      type: "object",
+      description: "",
+      title: "SpamPrediction",
+      required: [:class, :score],
+      additionalProperties: false,
+      properties: %{
+        class: %{type: "string", enum: [:spam, :not_spam]},
+        score: %{type: "number"}
       }
     }
 
@@ -235,31 +207,27 @@ defmodule JSONSchemaTest do
     json_schema = JSONSchema.from_ecto_schema(schema)
 
     expected_json_schema = %{
-      name: "root",
-      schema: %{
-        type: "object",
-        title: "root",
-        required: [:value],
-        additionalProperties: false,
-        properties: %{
-          value: %{
-            type: "object",
-            required: [:children, :name],
-            properties: %{
-              name: %{type: "string"},
-              children: %{
-                type: "array",
-                items: %{
-                  type: "object",
-                  required: [:name],
-                  properties: %{name: %{type: "string"}}
-                }
+      type: "object",
+      title: "root",
+      required: [:value],
+      additionalProperties: false,
+      properties: %{
+        value: %{
+          type: "object",
+          required: [:children, :name],
+          properties: %{
+            name: %{type: "string"},
+            children: %{
+              type: "array",
+              items: %{
+                type: "object",
+                required: [:name],
+                properties: %{name: %{type: "string"}}
               }
             }
           }
         }
-      },
-      strict: true
+      }
     }
 
     assert json_schema == expected_json_schema
@@ -269,19 +237,15 @@ defmodule JSONSchemaTest do
     json_schema = JSONSchema.from_ecto_schema(TestSchemas.LinkedList)
 
     expected_json_schema = %{
-      name: "LinkedList",
-      schema: %{
-        type: "object",
-        title: "LinkedList",
-        required: [:next, :value],
-        description: "",
-        additionalProperties: false,
-        properties: %{
-          value: %{type: "integer", title: "value"},
-          next: %{title: "next", "$ref": "#/$defs/LinkedList"}
-        }
+      type: "object",
+      title: "LinkedList",
+      required: [:next, :value],
+      description: "",
+      additionalProperties: false,
+      properties: %{
+        value: %{type: "integer"},
+        next: %{"$ref": "#/$defs/LinkedList"}
       },
-      strict: true,
       "$defs": %{
         "LinkedList" => %{
           type: "object",
@@ -290,8 +254,8 @@ defmodule JSONSchemaTest do
           required: [:next, :value],
           additionalProperties: false,
           properties: %{
-            value: %{type: "integer", title: "value"},
-            next: %{title: "next", "$ref": "#/$defs/LinkedList"}
+            value: %{type: "integer"},
+            next: %{"$ref": "#/$defs/LinkedList"}
           }
         }
       }

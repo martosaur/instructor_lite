@@ -99,6 +99,52 @@ defmodule InstructorTest do
                  response_model: %{name: :string, birth_date: :date}
                )
     end
+
+    test "calls validate_changeset from opts if present" do
+      expect(MockAdapter, :from_response, fn _ -> {:ok, %{"name" => "foo"}} end)
+
+      validate = fn %Ecto.Changeset{} = cs, opts ->
+        assert [adapter: MockAdapter, response_model: %{name: :string}, validate_changeset: _] =
+                 opts
+
+        cs
+      end
+
+      assert {:ok, %{name: "foo"}} =
+               Instructor.consume_response(:foo, %{},
+                 adapter: MockAdapter,
+                 response_model: %{name: :string},
+                 validate_changeset: validate
+               )
+    end
+
+    test "calls validate_changeset/2 callback of exported" do
+      defmodule ImpossibleGuess do
+        use Ecto.Schema
+        use Instructor.Instruction
+
+        @primary_key false
+        embedded_schema do
+          field(:guess, :string)
+        end
+
+        @impl true
+        def validate_changeset(cs, opts) do
+          Ecto.Changeset.add_error(cs, :name, opts[:always_error])
+        end
+      end
+
+      MockAdapter
+      |> expect(:from_response, fn _ -> {:ok, %{"guess" => "Banana"}} end)
+      |> expect(:retry_prompt, fn _, _, _, _ -> "new_params" end)
+
+      assert {:error, %Ecto.Changeset{errors: [name: {"Wrong!", []}]}, "new_params"} =
+               Instructor.consume_response(:foo, %{},
+                 adapter: MockAdapter,
+                 response_model: ImpossibleGuess,
+                 always_error: "Wrong!"
+               )
+    end
   end
 
   describe "chat_completion/2" do

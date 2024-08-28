@@ -29,7 +29,7 @@ defmodule Instructor.Adapters.OpenAI do
   @impl true
   def initial_prompt(params, opts) do
     mandatory_part = """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
+    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
     """
 
     optional_notes =
@@ -45,7 +45,7 @@ defmodule Instructor.Adapters.OpenAI do
     sys_message = [
       %{
         role: "system",
-        content: mandatory_part <> optional_notes
+        content: mandatory_part
       }
     ]
 
@@ -53,7 +53,12 @@ defmodule Instructor.Adapters.OpenAI do
     |> Map.put_new(:model, @default_model)
     |> Map.put(:response_format, %{
       type: "json_schema",
-      json_schema: opts[:json_schema]
+      json_schema: %{
+        name: "schema",
+        description: optional_notes,
+        strict: true,
+        schema: opts[:json_schema]
+      }
     })
     |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)
   end

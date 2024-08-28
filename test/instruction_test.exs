@@ -19,17 +19,18 @@ defmodule Instructor.InstructionTest do
     end
 
     test "nil by default" do
-      defmodule Foo do
+      defmodule NoNotes do
         use Instructor.Instruction
       end
 
-      assert Foo.notes() == nil
+      assert NoNotes.notes() == nil
     end
 
     test "overridable" do
       defmodule Foo do
         use Instructor.Instruction
 
+        @impl Instructor.Instruction
         def notes(), do: "Overriden!"
       end
 
@@ -55,18 +56,18 @@ defmodule Instructor.InstructionTest do
     end
 
     test "overridable" do
-      defmodule Demo do
+      defmodule OverridableJsonSchema do
         use Ecto.Schema
         use Instructor.Instruction
 
         def json_schema(), do: "I know better"
       end
 
-      assert Demo.json_schema() == "I know better"
+      assert OverridableJsonSchema.json_schema() == "I know better"
     end
 
     test "can use super" do
-      defmodule Demo do
+      defmodule CallSuper do
         use Ecto.Schema
         use Instructor.Instruction
 
@@ -75,10 +76,10 @@ defmodule Instructor.InstructionTest do
           field(:string, :string)
         end
 
-        def json_schema(), do: super()[:schema]
+        def json_schema(), do: super()[:type]
       end
 
-      assert %{type: "object"} = Demo.json_schema()
+      assert "object" = CallSuper.json_schema()
     end
   end
 end

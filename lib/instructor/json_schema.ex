@@ -37,18 +37,9 @@ defmodule Instructor.JSONSchema do
       end
 
     if map_size(defs) > 0 do
-      %{
-        name: root.title,
-        strict: true,
-        schema: root,
-        "$defs": defs
-      }
+      Map.put(root, :"$defs", defs)
     else
-      %{
-        name: root.title,
-        strict: true,
-        schema: root
-      }
+      root
     end
   end
 
@@ -82,7 +73,6 @@ defmodule Instructor.JSONSchema do
       |> Enum.map(fn field ->
         type = ecto_schema.__schema__(:type, field)
         value = for_type(type)
-        value = Map.merge(%{title: Atom.to_string(field)}, value)
 
         {field, value}
       end)
@@ -100,7 +90,6 @@ defmodule Instructor.JSONSchema do
           if association.cardinality == :many do
             %{
               items: %{"$ref": "#/$defs/#{title}"},
-              title: title,
               type: "array"
             }
           else
@@ -237,7 +226,6 @@ defmodule Instructor.JSONSchema do
 
     %{
       items: %{"$ref": "#/$defs/#{title}"},
-      title: title,
       type: "array"
     }
   end

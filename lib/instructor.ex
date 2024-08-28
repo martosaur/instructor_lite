@@ -234,7 +234,10 @@ defmodule Instructor do
       end
 
     with {:ok, resp_params} <- adapter.from_response(response) do
-      case cast(blank, resp_params) do
+      blank
+      |> cast(resp_params)
+      |> call_validate(response_model, opts)
+      |> case do
         %Ecto.Changeset{valid?: true} = cs ->
           {:ok, Ecto.Changeset.apply_changes(cs)}
 
@@ -247,16 +250,18 @@ defmodule Instructor do
     end
   end
 
-  defp call_validate(response_model, changeset, context) do
+  defp call_validate(changeset, response_model, opts) do
+    callback = opts[:validate_changeset]
+
     cond do
+      is_function(callback, 2) ->
+        callback.(changeset, opts)
+
       not is_atom(response_model) ->
         changeset
 
-      function_exported?(response_model, :validate_changeset, 1) ->
-        response_model.validate_changeset(changeset)
-
       function_exported?(response_model, :validate_changeset, 2) ->
-        response_model.validate_changeset(changeset, context)
+        response_model.validate_changeset(changeset, opts)
 
       true ->
         changeset

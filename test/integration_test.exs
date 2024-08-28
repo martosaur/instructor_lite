@@ -52,6 +52,29 @@ defmodule Instructor.IntegrationTest do
       assert is_float(score)
     end
 
+    test "with embedded" do
+      result =
+        Instructor.chat_completion(
+          %{
+            model: "gpt-4o-mini",
+            messages: [
+              %{
+                role: "user",
+                content: "Please fill in test data"
+              }
+            ]
+          },
+          response_model: TestSchemas.WithEmbedded,
+          http_client: Req,
+          http_options: [receive_timeout: 60_000],
+          api_key: Application.fetch_env!(:instructor, :openai_key),
+          adapter: OpenAI
+        )
+
+      assert {:ok, %{embedded: %{name: name}}} = result
+      assert is_binary(name)
+    end
+
     test "all ecto types" do
       result =
         Instructor.chat_completion(
@@ -109,6 +132,30 @@ defmodule Instructor.IntegrationTest do
       assert %DateTime{} = utc_datetime
       assert %DateTime{} = utc_datetime_usec
     end
+
+    test "with validate_changeset" do
+      result =
+        Instructor.chat_completion(
+          %{
+            model: "gpt-4o-mini",
+            messages: [
+              %{
+                role: "user",
+                content: "Guess the result!"
+              }
+            ]
+          },
+          response_model: TestSchemas.SecondGuess,
+          max_retries: 1,
+          http_client: Req,
+          http_options: [receive_timeout: 60_000],
+          api_key: Application.fetch_env!(:instructor, :openai_key),
+          adapter: OpenAI,
+          guess: :tails
+        )
+
+      assert {:ok, %{guess: :tails}} = result
+    end
   end
 
   describe "Anthropic" do
@@ -125,8 +172,7 @@ defmodule Instructor.IntegrationTest do
           response_model: schema,
           http_client: Req,
           api_key: Application.fetch_env!(:instructor, :anthropic_key),
-          adapter: Anthropic,
-          json_schema: Instructor.JSONSchema.from_ecto_schema(schema)[:schema]
+          adapter: Anthropic
         )
 
       assert {:ok, %{name: name, birth_date: birth_date}} = result
@@ -150,12 +196,33 @@ defmodule Instructor.IntegrationTest do
           http_client: Req,
           http_options: [receive_timeout: 60_000],
           api_key: Application.fetch_env!(:instructor, :anthropic_key),
-          adapter: Anthropic,
-          json_schema: TestSchemas.SpamPrediction.json_schema()[:schema]
+          adapter: Anthropic
         )
 
       assert {:ok, %{class: :spam, score: score}} = result
       assert is_float(score)
+    end
+
+    test "with embedded" do
+      result =
+        Instructor.chat_completion(
+          %{
+            messages: [
+              %{
+                role: "user",
+                content: "Please fill in test data"
+              }
+            ]
+          },
+          response_model: TestSchemas.WithEmbedded,
+          http_client: Req,
+          http_options: [receive_timeout: 60_000],
+          api_key: Application.fetch_env!(:instructor, :anthropic_key),
+          adapter: Anthropic
+        )
+
+      assert {:ok, %{embedded: %{name: name}}} = result
+      assert is_binary(name)
     end
 
     test "all ecto types" do
@@ -173,8 +240,7 @@ defmodule Instructor.IntegrationTest do
           http_client: Req,
           http_options: [receive_timeout: 60_000],
           api_key: Application.fetch_env!(:instructor, :anthropic_key),
-          adapter: Anthropic,
-          json_schema: TestSchemas.AllEctoTypes.json_schema()[:schema]
+          adapter: Anthropic
         )
 
       assert {:ok,
@@ -214,6 +280,29 @@ defmodule Instructor.IntegrationTest do
       assert %NaiveDateTime{} = naive_datetime_usec
       assert %DateTime{} = utc_datetime
       assert %DateTime{} = utc_datetime_usec
+    end
+
+    test "with validate_changeset" do
+      result =
+        Instructor.chat_completion(
+          %{
+            messages: [
+              %{
+                role: "user",
+                content: "Guess the result!"
+              }
+            ]
+          },
+          response_model: TestSchemas.SecondGuess,
+          max_retries: 1,
+          http_client: Req,
+          http_options: [receive_timeout: 60_000],
+          api_key: Application.fetch_env!(:instructor, :anthropic_key),
+          adapter: Anthropic,
+          guess: :tails
+        )
+
+      assert {:ok, %{guess: :tails}} = result
     end
   end
 
