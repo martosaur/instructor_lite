@@ -1,6 +1,8 @@
 defmodule InstructorTest do
   use ExUnit.Case, async: true
 
+  alias Instructor.TestSchemas
+
   import Mox
 
   setup :verify_on_exit!
@@ -232,6 +234,66 @@ defmodule InstructorTest do
       |> expect(:from_response, fn :response_body -> {:error, :unexpected_response} end)
 
       assert {:error, :unexpected_response} = Instructor.chat_completion(%{}, options)
+    end
+  end
+
+  describe "cast/2" do
+    test "adhoc schema" do
+      model = {%{}, %{name: :string}}
+      params = %{"name" => "foo"}
+
+      assert %Ecto.Changeset{changes: %{name: "foo"}} = Instructor.cast(model, params)
+    end
+
+    test "actual schema" do
+      model = %TestSchemas.SpamPrediction{}
+      params = %{"class" => "spam"}
+
+      assert %Ecto.Changeset{changes: %{class: :spam}, valid?: true} =
+               Instructor.cast(model, params)
+    end
+
+    test "embeds" do
+      model = %TestSchemas.WithEmbedded{}
+      params = %{"embedded" => %{"name" => "Foobar"}}
+
+      assert %Ecto.Changeset{
+               changes: %{embedded: %Ecto.Changeset{changes: %{name: "Foobar"}}},
+               valid?: true
+             } =
+               Instructor.cast(model, params)
+    end
+
+    test "associations" do
+      model = %TestSchemas.WithChildren{}
+      params = %{"children" => [%{"name" => "Foo"}, %{"name" => "Bar"}]}
+
+      assert %Ecto.Changeset{
+               changes: %{
+                 children: [
+                   %Ecto.Changeset{changes: %{name: "Foo"}},
+                   %Ecto.Changeset{changes: %{name: "Bar"}}
+                 ]
+               },
+               valid?: true
+             } =
+               Instructor.cast(model, params)
+    end
+
+    test "recursive" do
+      model = %TestSchemas.LinkedList{}
+      params = %{"value" => 0, "next" => %{"value" => 1, "next" => %{"value" => 2}}}
+
+      assert %Ecto.Changeset{
+               changes: %{
+                 value: 0,
+                 next: %Ecto.Changeset{
+                   changes: %{value: 1, next: %Ecto.Changeset{changes: %{value: 2}}}
+                 }
+               },
+               valid?: true
+             } =
+               Instructor.cast(model, params)
     end
   end
 end

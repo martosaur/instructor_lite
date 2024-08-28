@@ -15,8 +15,6 @@ defmodule Instructor do
   #{readme_docs}
   """
 
-  defguardp is_ecto_schema(mod) when is_atom(mod)
-
   @doc """
   Create a new chat completion for the provided messages and parameters.
 
@@ -171,7 +169,7 @@ defmodule Instructor do
       }
 
   """
-  def cast_all({data, types}, params) do
+  def cast({data, types}, params) do
     fields = Map.keys(types)
 
     {data, types}
@@ -179,8 +177,7 @@ defmodule Instructor do
     |> Ecto.Changeset.validate_required(fields)
   end
 
-  def cast_all(schema, params) do
-    response_model = schema.__struct__
+  def cast(%response_model{} = data, params) do
     fields = response_model.__schema__(:fields) |> MapSet.new()
     embedded_fields = response_model.__schema__(:embeds) |> MapSet.new()
     associated_fields = response_model.__schema__(:associations) |> MapSet.new()
@@ -190,25 +187,18 @@ defmodule Instructor do
       |> MapSet.difference(embedded_fields)
       |> MapSet.difference(associated_fields)
 
-    changeset =
-      schema
-      |> Ecto.Changeset.cast(params, fields |> MapSet.to_list())
-
-    changeset =
-      for field <- embedded_fields, reduce: changeset do
-        changeset ->
-          changeset
-          |> Ecto.Changeset.cast_embed(field, with: &cast_all/2)
-      end
-
-    changeset =
-      for field <- associated_fields, reduce: changeset do
-        changeset ->
-          changeset
-          |> Ecto.Changeset.cast_assoc(field, with: &cast_all/2)
-      end
-
-    changeset
+    data
+    |> Ecto.Changeset.cast(params, MapSet.to_list(fields))
+    |> then(fn cs ->
+      Enum.reduce(embedded_fields, cs, fn field, cs ->
+        Ecto.Changeset.cast_embed(cs, field, with: &cast/2)
+      end)
+    end)
+    |> then(fn cs ->
+      Enum.reduce(associated_fields, cs, fn field, cs ->
+        Ecto.Changeset.cast_assoc(cs, field, with: &cast/2)
+      end)
+    end)
   end
 
   def prepare_prompt(params, opts) do
@@ -236,15 +226,15 @@ defmodule Instructor do
     response_model = opts[:response_model]
     adapter = opts[:adapter]
 
-    model =
-      if is_ecto_schema(response_model) do
+    blank =
+      if is_atom(response_model) do
         response_model.__struct__()
       else
         {%{}, response_model}
       end
 
     with {:ok, resp_params} <- adapter.from_response(response) do
-      case cast_all(model, resp_params) do
+      case cast(blank, resp_params) do
         %Ecto.Changeset{valid?: true} = cs ->
           {:ok, Ecto.Changeset.apply_changes(cs)}
 
@@ -259,7 +249,7 @@ defmodule Instructor do
 
   defp call_validate(response_model, changeset, context) do
     cond do
-      not is_ecto_schema(response_model) ->
+      not is_atom(response_model) ->
         changeset
 
       function_exported?(response_model, :validate_changeset, 1) ->

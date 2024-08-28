@@ -1,32 +1,25 @@
-Code.compiler_options(ignore_module_conflict: true, docs: true, debug_info: true)
-
 defmodule JSONSchemaTest do
   use ExUnit.Case, async: true
 
   alias Instructor.JSONSchema
+  alias Instructor.TestSchemas
 
   test "schema" do
-    defmodule Demo do
-      use Ecto.Schema
-
-      @primary_key false
-      schema "demo" do
-        field(:string, :string)
-      end
-    end
-
-    json_schema = JSONSchema.from_ecto_schema(JSONSchemaTest.Demo)
+    json_schema = JSONSchema.from_ecto_schema(TestSchemas.Child)
 
     expected_json_schema = %{
-      name: "Demo",
+      name: "Child",
       strict: true,
       schema: %{
         type: "object",
         description: "",
-        title: "Demo",
-        required: [:string],
+        title: "Child",
+        required: [:id, :name],
         additionalProperties: false,
-        properties: %{string: %{type: "string", title: "string"}}
+        properties: %{
+          name: %{type: "string", title: "name"},
+          id: %{type: "integer", title: "id"}
+        }
       }
     }
 
@@ -34,27 +27,18 @@ defmodule JSONSchemaTest do
   end
 
   test "embedded_schema" do
-    defmodule Demo do
-      use Ecto.Schema
-
-      @primary_key false
-      embedded_schema do
-        field(:string, :string)
-      end
-    end
-
-    json_schema = JSONSchema.from_ecto_schema(Demo)
+    json_schema = JSONSchema.from_ecto_schema(TestSchemas.Embedded)
 
     expected_json_schema = %{
-      name: "Demo",
+      name: "Embedded",
       strict: true,
       schema: %{
         description: "",
-        required: [:string],
-        title: "Demo",
+        required: [:name],
+        title: "Embedded",
         type: "object",
         additionalProperties: false,
-        properties: %{string: %{type: "string", title: "string"}}
+        properties: %{name: %{type: "string", title: "name"}}
       }
     }
 
@@ -62,42 +46,17 @@ defmodule JSONSchemaTest do
   end
 
   test "basic types" do
-    defmodule Demo do
-      use Ecto.Schema
-
-      # Be explicit about all fields in this test
-      @primary_key false
-      embedded_schema do
-        # field(:binary_id, :binary_id)
-        field(:integer, :integer)
-        field(:float, :float)
-        field(:boolean, :boolean)
-        field(:string, :string)
-        # field(:binary, :binary)
-        field(:array, {:array, :string})
-        # field(:map, :map)
-        # field(:map_two, {:map, :string})
-        field(:decimal, :decimal)
-        field(:date, :date)
-        field(:time, :time)
-        field(:time_usec, :time_usec)
-        field(:naive_datetime, :naive_datetime)
-        field(:naive_datetime_usec, :naive_datetime_usec)
-        field(:utc_datetime, :utc_datetime)
-        field(:utc_datetime_usec, :utc_datetime_usec)
-      end
-    end
-
-    json_schema = JSONSchema.from_ecto_schema(Demo)
+    json_schema = JSONSchema.from_ecto_schema(TestSchemas.AllEctoTypes)
 
     expected_json_schema = %{
-      name: "Demo",
+      name: "AllEctoTypes",
       schema: %{
         type: "object",
         description: "",
-        title: "Demo",
+        title: "AllEctoTypes",
         required: [
           :array,
+          :binary_id,
           :boolean,
           :date,
           :decimal,
@@ -113,6 +72,7 @@ defmodule JSONSchemaTest do
         ],
         additionalProperties: false,
         properties: %{
+          binary_id: %{type: "string", title: "binary_id"},
           integer: %{type: "integer", title: "integer"},
           date: %{type: "string", title: "date"},
           float: %{type: "number", title: "float"},
@@ -137,34 +97,16 @@ defmodule JSONSchemaTest do
   end
 
   test "embedded schemas" do
-    defmodule Embedded do
-      use Ecto.Schema
-
-      @primary_key false
-      embedded_schema do
-        field(:string, :string)
-      end
-    end
-
-    defmodule Demo do
-      use Ecto.Schema
-
-      @primary_key false
-      embedded_schema do
-        embeds_one(:embedded, Embedded)
-      end
-    end
-
-    json_schema = JSONSchema.from_ecto_schema(Demo)
+    json_schema = JSONSchema.from_ecto_schema(TestSchemas.WithEmbedded)
 
     expected_json_schema = %{
-      name: "Demo",
+      name: "WithEmbedded",
       schema: %{
         additionalProperties: false,
         description: "",
         properties: %{embedded: %{title: "embedded", "$ref": "#/$defs/Embedded"}},
         required: [:embedded],
-        title: "Demo",
+        title: "WithEmbedded",
         type: "object"
       },
       strict: true,
@@ -173,9 +115,11 @@ defmodule JSONSchemaTest do
           type: "object",
           description: "",
           title: "Embedded",
-          required: [:string],
+          required: [:name],
           additionalProperties: false,
-          properties: %{string: %{type: "string", title: "string"}}
+          properties: %{
+            name: %{type: "string", title: "name"}
+          }
         }
       }
     }
@@ -184,23 +128,7 @@ defmodule JSONSchemaTest do
   end
 
   test "has_one" do
-    defmodule Child do
-      use Ecto.Schema
-
-      schema "child" do
-        field(:string, :string)
-      end
-    end
-
-    defmodule Demo do
-      use Ecto.Schema
-
-      schema "demo" do
-        has_one(:child, Child)
-      end
-    end
-
-    json_schema = JSONSchema.from_ecto_schema(Demo)
+    json_schema = JSONSchema.from_ecto_schema(TestSchemas.WithChild)
 
     expected_json_schema = %{
       "$defs": %{
@@ -208,19 +136,19 @@ defmodule JSONSchemaTest do
           type: "object",
           description: "",
           title: "Child",
-          required: [:id, :string],
+          required: [:id, :name],
           additionalProperties: false,
           properties: %{
             id: %{type: "integer", title: "id"},
-            string: %{type: "string", title: "string"}
+            name: %{type: "string", title: "name"}
           }
         }
       },
-      name: "Demo",
+      name: "WithChild",
       schema: %{
         type: "object",
         description: "",
-        title: "Demo",
+        title: "WithChild",
         required: [:child, :id],
         additionalProperties: false,
         properties: %{id: %{type: "integer", title: "id"}, child: %{"$ref": "#/$defs/Child"}}
@@ -232,23 +160,7 @@ defmodule JSONSchemaTest do
   end
 
   test "has_many" do
-    defmodule Child do
-      use Ecto.Schema
-
-      schema "child" do
-        field(:string, :string)
-      end
-    end
-
-    defmodule Demo do
-      use Ecto.Schema
-
-      schema "demo" do
-        has_many(:children, Child)
-      end
-    end
-
-    json_schema = JSONSchema.from_ecto_schema(Demo)
+    json_schema = JSONSchema.from_ecto_schema(TestSchemas.WithChildren)
 
     expected_json_schema = %{
       "$defs": %{
@@ -256,19 +168,19 @@ defmodule JSONSchemaTest do
           type: "object",
           description: "",
           title: "Child",
-          required: [:id, :string],
+          required: [:id, :name],
           additionalProperties: false,
           properties: %{
             id: %{type: "integer", title: "id"},
-            string: %{type: "string", title: "string"}
+            name: %{type: "string", title: "name"}
           }
         }
       },
-      name: "Demo",
+      name: "WithChildren",
       schema: %{
         type: "object",
         description: "",
-        title: "Demo",
+        title: "WithChildren",
         required: [:children, :id],
         additionalProperties: false,
         properties: %{
@@ -283,17 +195,7 @@ defmodule JSONSchemaTest do
   end
 
   test "enum" do
-    defmodule SpamPrediction do
-      use Ecto.Schema
-
-      @primary_key false
-      embedded_schema do
-        field(:class, Ecto.Enum, values: [:spam, :not_spam])
-        field(:score, :float)
-      end
-    end
-
-    json_schema = JSONSchema.from_ecto_schema(SpamPrediction)
+    json_schema = JSONSchema.from_ecto_schema(TestSchemas.SpamPrediction)
 
     expected_json_schema = %{
       name: "SpamPrediction",
@@ -358,6 +260,41 @@ defmodule JSONSchemaTest do
         }
       },
       strict: true
+    }
+
+    assert json_schema == expected_json_schema
+  end
+
+  test "recursive schema" do
+    json_schema = JSONSchema.from_ecto_schema(TestSchemas.LinkedList)
+
+    expected_json_schema = %{
+      name: "LinkedList",
+      schema: %{
+        type: "object",
+        title: "LinkedList",
+        required: [:next, :value],
+        description: "",
+        additionalProperties: false,
+        properties: %{
+          value: %{type: "integer", title: "value"},
+          next: %{title: "next", "$ref": "#/$defs/LinkedList"}
+        }
+      },
+      strict: true,
+      "$defs": %{
+        "LinkedList" => %{
+          type: "object",
+          description: "",
+          title: "LinkedList",
+          required: [:next, :value],
+          additionalProperties: false,
+          properties: %{
+            value: %{type: "integer", title: "value"},
+            next: %{title: "next", "$ref": "#/$defs/LinkedList"}
+          }
+        }
+      }
     }
 
     assert json_schema == expected_json_schema
