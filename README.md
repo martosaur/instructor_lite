@@ -1,100 +1,109 @@
-# instructor_ex
+# Instructor Lite
 
-_Structured, Ecto outputs with OpenAI (and OSS LLMs)_
+_Structured, Ecto outputs with LLMs_
 
 ---
 
 [![Instructor version](https://img.shields.io/hexpm/v/instructor.svg)](https://hex.pm/packages/instructor)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/instructor/)
 [![Hex Downloads](https://img.shields.io/hexpm/dt/instructor)](https://hex.pm/packages/instructor)
-[![GitHub stars](https://img.shields.io/github/stars/thmsmlr/instructor_ex.svg)](https://github.com/thmsmlr/instructor_ex/stargazers)
-[![Twitter Follow](https://img.shields.io/twitter/follow/thmsmlr?style=social)](https://twitter.com/thmsmlr)
-[![Discord](https://img.shields.io/discord/1192334452110659664?label=discord)](https://discord.gg/CV8sPM5k5Y)
+[![GitHub stars](https://img.shields.io/github/stars/martosaur/instructor_ex.svg)](https://github.com/martosaur/instructor_ex/stargazers)
+[![Twitter Follow](https://img.shields.io/twitter/follow/distantprovince?style=social)](https://twitter.com/distantprovince)
 
 <!-- Docs -->
 
- Structured prompting for LLMs. Instructor is a spiritual port of the great [Instructor Python Library](https://github.com/jxnl/instructor) by [@jxnlco](https://twitter.com/jxnlco), check out his [talk on YouTube](https://www.youtube.com/watch?v=yj-wSRJwrrc).
+Structured prompting for LLMs. Instructor Lite is a fork and spiritual successor to [instructor_ex](https://github.com/thmsmlr/instructor_ex) library, which is the Elixir member of the great [Instructor](https://useinstructor.com/) family.
  
- The Instructor library is useful for coaxing an LLM to return JSON that maps to an Ecto schema that you provide, rather than the default unstructured text output. If you define your own validation logic, Instructor can automatically retry prompts when validation fails (returning natural language error messages to the LLM, to guide it when making corrections).
+The Instructor is useful for coaxing an LLM to return JSON that maps to an Ecto schema that you provide, rather than the default unstructured text output. If you define your own validation logic, Instructor can automatically retry prompts when validation fails (returning natural language error messages to the LLM, to guide it when making corrections).
 
-Instructor is designed to be used with the [OpenAI API](https://platform.openai.com/docs/api-reference/chat-completions/create) by default, but it also works with [llama.cpp](https://github.com/ggerganov/llama.cpp) and [Bumblebee](https://github.com/elixir-nx/bumblebee) (Coming Soon!) by using an extendable adapter behavior.
 
-At its simplest, usage is pretty straightforward: 
+## Why Lite
 
-1. Create an ecto schema, with a `@doc` string that explains the schema definition to the LLM. 
-2. Define a `validate_changeset/1` function on the schema, and use the `Instructor.Validator` macro in order for Instructor to know about it.
-2. Make a call to `Instructor.chat_completion/1` with an instruction for the LLM to execute.
+Instructor Lite is designed to be:
+1. **Lean**. It does so little it makes you question if you should just write your own version.
+2. **Composable**. Almost everything it does can be overridden or extended.
+3. **Magic-free**. It doesn't hide complexity behind one line function calls, but does its best to provide you with enough information to understand what's going on.
 
-You can use the `max_retries` parameter to automatically, iteratively go back and forth with the LLM to try fixing validation errorswhen they occur.
+Instructor Lite comes with 3 adapters: [OpenAI](https://openai.com/api/), [Anthropic](https://www.anthropic.com/) and [Llamacpp](https://github.com/ggerganov/llama.cpp). 
+
+## Features
+
+Instructor Lite can be boiled down to these features:
+1. It provides a very simple function for generating JSON-schema from Ecto schema.
+2. It facilitates generating prompts, calling LLMs, casting and validating responses, including retrying prompts when validation fails.
+3. It holds knowledge of major LLM providers' API interfaces with adapters.
+
+Any of the features above can be used independently.
+
+## Usage
+
+Define an instruction, which is a normal Ecto schema with an extra `use Instructor.Instruction` call.
 
 ```elixir
-defmodule SpamPrediction do
+defmodule UserInfo do
   use Ecto.Schema
-  use Instructor.Validator
-
-  @doc """
-  ## Field Descriptions:
-  - class: Whether or not the email is spam.
-  - reason: A short, less than 10 word rationalization for the classification.
-  - score: A confidence score between 0.0 and 1.0 for the classification.
-  """
+  use Instructor.Instruction
+  
   @primary_key false
   embedded_schema do
-    field(:class, Ecto.Enum, values: [:spam, :not_spam])
-    field(:reason, :string)
-    field(:score, :float)
-  end
-
-  @impl true
-  def validate_changeset(changeset) do
-    changeset
-    |> Ecto.Changeset.validate_number(:score,
-      greater_than_or_equal_to: 0.0,
-      less_than_or_equal_to: 1.0
-    )
+    field(:name, :string)
+    field(:age, :integer)
   end
 end
-
-is_spam? = fn text ->
-  Instructor.chat_completion(
-    model: "gpt-3.5-turbo",
-    response_model: SpamPrediction,
-    max_retries: 3,
-    messages: [
-      %{
-        role: "user",
-        content: """
-        Your purpose is to classify customer support emails as either spam or not.
-        This is for a clothing retail business.
-        They sell all types of clothing.
-
-        Classify the following email: 
-        ```
-        #{text}
-        ```
-        """
-      }
-    ]
-  )
-end
-
-is_spam?.("Hello I am a Nigerian prince and I would like to send you money")
-
-# => {:ok, %SpamPrediction{class: :spam, reason: "Nigerian prince email scam", score: 0.98}}
 ```
 
-Check out our [Quickstart Guide](https://hexdocs.pm/instructor/quickstart.html) for more code snippets that you can run locally (in Livebook). Or, to get a better idea of the thinking behind Instructor, read more about our [Philosophy & Motivations](https://hexdocs.pm/instructor/philosophy.html).
+Now let's use `Instructor.completion/2` to fill the schema from unstructured text (with typos!):
 
-Optionally, you can also customize the your llama.cpp calls (with defaults shown):
+<!-- tabs-open -->
+
+### OpenAI
+
 ```elixir
-llamacpp
-config :instructor, adapter: Instructor.Adapters.Llamacpp
-config :instructor, :llamacpp,
-    chat_template: :mistral_instruct,
-    api_url: "http://localhost:8080/completion"
-````
+iex> Instructor.chat_completion(%{
+    messages: [
+      %{role: "user", content: "John Doe is fourty two years old"}
+    ]
+  },
+  response_model: UserInfo,
+  adapter_context: [api_key: Application.fetch_env!(:instructor, :openai_key)]
+)
+{:ok, %UserInfo{name: "John Doe", age: 42}}
+```
 
-<!-- Docs -->
+### Anthropic
+
+```elixir
+iex> Instructor.chat_completion(%{
+    messages: [
+      %{role: "user", content: "John Doe is fourty two years old"}
+    ]
+  },
+  response_model: UserInfo,
+  adapter: Instructor.Adapters.Anthropic,
+  adapter_context: [api_key: Application.fetch_env!(:instructor, :anthropic_key)]
+)
+{:ok, %UserInfo{name: "John Doe", age: 42}}
+```
+
+### Llamacpp
+
+```elixir
+iex> Instructor.chat_completion(%{
+    prompt: "John Doe is fourty two years old"
+  },
+  response_model: UserInfo,
+  adapter: Instructor.Adapters.Llamacpp,
+  adapter_context: [url: Application.fetch_env!(:instructor, :llamacpp_url)]
+)
+{:ok, %UserInfo{name: "John Doe", age: 42}}
+```
+
+<!-- tabs-close -->
+
+## Configuration
+
+Instructor Lite _does not_ access the application environment for configuration options like adapter or api key. Instead, they're passed as options when needed. Note that different adapters may require different options, so make sure to check their documentation. 
+
 
 ## Installation
 
@@ -103,69 +112,7 @@ In your mix.exs,
 ```elixir
 def deps do
   [
-    {:instructor, "~> 0.0.5"}
+    {:instructor, "~> 0.1.0"}
   ]
 end
 ```
-
-InstructorEx uses [Code.fetch_docs/1](https://hexdocs.pm/elixir/1.16.2/Code.html#fetch_docs/1) to fetch LLM instructions from the Ecto schema specified in `response_model`. If your project is deployed using [releases](https://hexdocs.pm/mix/Mix.Tasks.Release.html), add the following configuration to mix.exs to prevent docs from being stripped from the release:
-
-```elixir
-def project do
-  # ...
-  releases: [
-    myapp: [
-      strip_beams: [keep: ["Docs"]]
-    ]
-  ]
-end
-```
-
-## TODO
-
-- [ ] llamacpp adapter broken, needs to support openai input/output API
-  - [ ] GBNF should enforce required properties on objects, currently they're optional.
-  - [ ] GBNF limit the number of digits in number tokens -- small models can sometimes run off to infinit digits
-- [ ] Add instructor tests against llamacpp interface using mocks, there's non-trivial logic in there
-- [ ] Logging for Distillation / Finetuning
-- [ ] Add a Bumblebee adapter
-- [ ] Add llamacpp_ex adapter
-- [ ] Support naked ecto types by auto-wrapping, not just maps of ecto types, do not wrap if we don't need to... Current codepaths are muddled
-- [ ] Optional/Maybe types
-- [ ] Add Livebook Tutorials, include in Hexdocs
-    - [x] Text Classification
-    - [ ] Self Critique
-    - [ ] Image Extracting Tables
-    - [ ] Moderation
-    - [x] Citations
-    - [ ] Knowledge Graph
-    - [ ] Entity Resolution
-    - [ ] Search Queries
-    - [ ] Query Decomposition
-    - [ ] Recursive Schemas
-    - [x] Table Extraction
-    - [x] Action Item and Dependency Mapping
-    - [ ] Multi-File Code Generation
-    - [ ] PII Data Sanitizatiommersed
-- [x] Update hexdocs homepage to include example for tutorial
-- [ ] Setup Github CI for testing, add badge to README
-
-## Blog Posts
-
-- [ ] Why structured prompting?
-
-    Meditations on new HCI.
-    Finally we have software that can understand text. f(text) -> text.
-    This is great, as it gives us a new domain, but the range is still text.
-    While we can use string interpolation to map Software 1.0 into f(text), the outputs are not interoperable with Software 1.0.
-    Hence why UXs available to us are things like Chatbots as our users have to interpret the output.
-
-    Instructor, structure prompting, gives use f(text) -> ecto_schema.
-    Schemas are the lingua franca of Software 1.0.
-    With Instrutor we can now seamlessly move back and forth between Software 1.0 and Software 2.0.
-
-    Now we can maximally leverage AI...
-
-- [ ] From GPT-4 to zero-cost production - Distilation, local-llms, and the cost structure of AI.
-
-    ... 😘

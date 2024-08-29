@@ -125,4 +125,32 @@ defmodule Instructor.TestSchemas do
       end
     end
   end
+
+  defmodule UserInfo do
+    use Ecto.Schema
+    use Instructor.Instruction
+
+    @primary_key false
+    embedded_schema do
+      field(:name, :string)
+      field(:age, :integer)
+    end
+  end
+
+  defmodule SCPObject do
+    use Ecto.Schema
+    use Instructor.Instruction
+
+    @primary_key false
+    embedded_schema do
+      field(:item_id, :string)
+      field(:object_class, :string)
+      field(:containment_procedures, :string)
+    end
+
+    @impl Instructor.Instruction
+    def validate_changeset(changeset, _opts) do
+      changeset
+    end
+  end
 end
