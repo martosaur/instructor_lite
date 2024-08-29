@@ -4,22 +4,41 @@ defmodule Instructor.Adapters.OpenAI do
   """
   @behaviour Instructor.Adapter
 
-  @default_config [
-    url: "https://api.openai.com/v1/chat/completions",
-    http_options: [receive_timeout: 60_000]
-  ]
-
   @default_model "gpt-4o-mini"
+
+  @send_request_schema NimbleOptions.new!(
+                         api_key: [
+                           type: :string,
+                           required: true,
+                           doc: "OpenAI API key"
+                         ],
+                         http_client: [
+                           type: :atom,
+                           default: Req,
+                           doc: "Any module that follows `Req.post/2` interface"
+                         ],
+                         http_options: [
+                           type: :keyword_list,
+                           default: [receive_timeout: 60_000]
+                         ],
+                         url: [
+                           type: :string,
+                           default: "https://api.openai.com/v1/chat/completions",
+                           doc: "API endpoint to use for sending requests"
+                         ]
+                       )
 
   @impl Instructor.Adapter
   def send_request(params, opts) do
-    opts = Keyword.merge(@default_config, opts)
-    http_client = Keyword.fetch!(opts, :http_client)
-    api_key = Keyword.fetch!(opts, :api_key)
+    context =
+      opts
+      |> Keyword.get(:adapter_context, [])
+      |> NimbleOptions.validate!(@send_request_schema)
 
-    options = Keyword.merge(opts[:http_options], json: params, auth: {:bearer, api_key})
+    options =
+      Keyword.merge(context[:http_options], json: params, auth: {:bearer, context[:api_key]})
 
-    case http_client.post(opts[:url], options) do
+    case context[:http_client].post(context[:url], options) do
       {:ok, %{status: 200, body: body}} -> {:ok, body}
       {:ok, response} -> {:error, response}
       {:error, reason} -> {:error, reason}
@@ -57,7 +76,7 @@ defmodule Instructor.Adapters.OpenAI do
         name: "schema",
         description: optional_notes,
         strict: true,
-        schema: opts[:json_schema]
+        schema: Keyword.fetch!(opts, :json_schema)
       }
     })
     |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)

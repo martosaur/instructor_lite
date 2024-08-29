@@ -138,10 +138,12 @@ defmodule Instructor.Adapters.OpenAITest do
       params = %{hello: "world"}
 
       opts = [
-        http_client: HTTPClient.Mock,
-        api_key: "api-key",
-        http_options: [foo: "bar"],
-        url: "https://openai.compatible/v42/chat/compl"
+        adapter_context: [
+          http_client: HTTPClient.Mock,
+          api_key: "api-key",
+          http_options: [foo: "bar"],
+          url: "https://openai.compatible/v42/chat/compl"
+        ]
       ]
 
       expect(HTTPClient.Mock, :post, fn url, options ->
@@ -161,8 +163,10 @@ defmodule Instructor.Adapters.OpenAITest do
 
     test "non-200 response" do
       opts = [
-        http_client: HTTPClient.Mock,
-        api_key: "api-key"
+        adapter_context: [
+          http_client: HTTPClient.Mock,
+          api_key: "api-key"
+        ]
       ]
 
       expect(HTTPClient.Mock, :post, fn _url, _options ->
@@ -174,8 +178,10 @@ defmodule Instructor.Adapters.OpenAITest do
 
     test "request error" do
       opts = [
-        http_client: HTTPClient.Mock,
-        api_key: "api-key"
+        adapter_context: [
+          http_client: HTTPClient.Mock,
+          api_key: "api-key"
+        ]
       ]
 
       expect(HTTPClient.Mock, :post, fn _url, _options -> {:error, :timeout} end)

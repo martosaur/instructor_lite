@@ -17,10 +17,11 @@ defmodule Instructor.IntegrationTest do
             ]
           },
           response_model: %{name: :string, birth_date: :date},
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :openai_key),
-          adapter: OpenAI
+          adapter: OpenAI,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :openai_key)
+          ]
         )
 
       assert {:ok, %{name: name, birth_date: birth_date}} = result
@@ -42,10 +43,11 @@ defmodule Instructor.IntegrationTest do
             ]
           },
           response_model: TestSchemas.SpamPrediction,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :openai_key),
-          adapter: OpenAI
+          adapter: OpenAI,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :openai_key)
+          ]
         )
 
       assert {:ok, %{class: :spam, score: score}} = result
@@ -65,10 +67,11 @@ defmodule Instructor.IntegrationTest do
             ]
           },
           response_model: TestSchemas.WithEmbedded,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :openai_key),
-          adapter: OpenAI
+          adapter: OpenAI,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :openai_key)
+          ]
         )
 
       assert {:ok, %{embedded: %{name: name}}} = result
@@ -88,10 +91,11 @@ defmodule Instructor.IntegrationTest do
             ]
           },
           response_model: TestSchemas.AllEctoTypes,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :openai_key),
-          adapter: OpenAI
+          adapter: OpenAI,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :openai_key)
+          ]
         )
 
       assert {:ok,
@@ -147,11 +151,12 @@ defmodule Instructor.IntegrationTest do
           },
           response_model: TestSchemas.SecondGuess,
           max_retries: 1,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :openai_key),
           adapter: OpenAI,
-          guess: :tails
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :openai_key)
+          ],
+          extra: :tails
         )
 
       assert {:ok, %{guess: :tails}} = result
@@ -170,9 +175,11 @@ defmodule Instructor.IntegrationTest do
             ]
           },
           response_model: schema,
-          http_client: Req,
-          api_key: Application.fetch_env!(:instructor, :anthropic_key),
-          adapter: Anthropic
+          adapter: Anthropic,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+          ]
         )
 
       assert {:ok, %{name: name, birth_date: birth_date}} = result
@@ -193,10 +200,11 @@ defmodule Instructor.IntegrationTest do
             ]
           },
           response_model: TestSchemas.SpamPrediction,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :anthropic_key),
-          adapter: Anthropic
+          adapter: Anthropic,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+          ]
         )
 
       assert {:ok, %{class: :spam, score: score}} = result
@@ -215,10 +223,11 @@ defmodule Instructor.IntegrationTest do
             ]
           },
           response_model: TestSchemas.WithEmbedded,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :anthropic_key),
-          adapter: Anthropic
+          adapter: Anthropic,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+          ]
         )
 
       assert {:ok, %{embedded: %{name: name}}} = result
@@ -237,10 +246,11 @@ defmodule Instructor.IntegrationTest do
             ]
           },
           response_model: TestSchemas.AllEctoTypes,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :anthropic_key),
-          adapter: Anthropic
+          adapter: Anthropic,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+          ]
         )
 
       assert {:ok,
@@ -295,11 +305,12 @@ defmodule Instructor.IntegrationTest do
           },
           response_model: TestSchemas.SecondGuess,
           max_retries: 1,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          api_key: Application.fetch_env!(:instructor, :anthropic_key),
           adapter: Anthropic,
-          guess: :tails
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+          ],
+          extra: :tails
         )
 
       assert {:ok, %{guess: :tails}} = result
@@ -312,10 +323,11 @@ defmodule Instructor.IntegrationTest do
         Instructor.chat_completion(
           %{prompt: "Who was the first president of the USA?"},
           response_model: %{name: :string, number_of_terms: :integer},
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          url: Application.fetch_env!(:instructor, :llamacpp_url),
-          adapter: Llamacpp
+          adapter: Llamacpp,
+          adapter_context: [
+            http_client: Req,
+            url: Application.fetch_env!(:instructor, :llamacpp_url)
+          ]
         )
 
       assert {:ok, %{name: name, number_of_terms: n}} = result
@@ -331,10 +343,11 @@ defmodule Instructor.IntegrationTest do
               "Classify the following text: Hello, I am a Nigerian prince and I would like to give you $1,000,000."
           },
           response_model: TestSchemas.SpamPrediction,
-          http_client: Req,
-          http_options: [receive_timeout: 60_000],
-          url: Application.fetch_env!(:instructor, :llamacpp_url),
-          adapter: Llamacpp
+          adapter: Llamacpp,
+          adapter_context: [
+            http_client: Req,
+            url: Application.fetch_env!(:instructor, :llamacpp_url)
+          ]
         )
 
       assert {:ok, %{class: :spam, score: score}} = result

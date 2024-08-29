@@ -71,9 +71,11 @@ defmodule Instructor.Adapters.LlamacppTest do
       params = %{hello: "world"}
 
       opts = [
-        http_client: HTTPClient.Mock,
-        http_options: [foo: "bar"],
-        url: "https://localhost:8001/completion"
+        adapter_context: [
+          http_client: HTTPClient.Mock,
+          http_options: [foo: "bar"],
+          url: "https://localhost:8001/completion"
+        ]
       ]
 
       expect(HTTPClient.Mock, :post, fn url, options ->
@@ -92,7 +94,10 @@ defmodule Instructor.Adapters.LlamacppTest do
 
     test "non-200 response" do
       opts = [
-        http_client: HTTPClient.Mock
+        adapter_context: [
+          http_client: HTTPClient.Mock,
+          url: "https://example.com"
+        ]
       ]
 
       expect(HTTPClient.Mock, :post, fn _url, _options ->
@@ -104,7 +109,10 @@ defmodule Instructor.Adapters.LlamacppTest do
 
     test "request error" do
       opts = [
-        http_client: HTTPClient.Mock
+        adapter_context: [
+          http_client: HTTPClient.Mock,
+          url: "https://example.com"
+        ]
       ]
 
       expect(HTTPClient.Mock, :post, fn _url, _options -> {:error, :timeout} end)

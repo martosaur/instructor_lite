@@ -117,7 +117,7 @@ defmodule Instructor.TestSchemas do
 
     @impl Instructor.Instruction
     def validate_changeset(cs, opts) do
-      target = opts[:guess]
+      target = Keyword.fetch!(opts, :extra)
 
       case Ecto.Changeset.fetch_field!(cs, :guess) do
         ^target -> cs

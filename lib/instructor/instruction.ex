@@ -1,7 +1,7 @@
 defmodule Instructor.Instruction do
   @callback notes() :: String.t() | nil
   @callback json_schema() :: map()
-  @callback validate_changeset(Ecto.Changeset.t(), Keyword.t()) :: Ecto.Changeset.t()
+  @callback validate_changeset(Ecto.Changeset.t(), context :: any()) :: Ecto.Changeset.t()
 
   @optional_callbacks validate_changeset: 2
 

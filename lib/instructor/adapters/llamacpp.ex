@@ -9,39 +9,34 @@ defmodule Instructor.Adapters.Llamacpp do
 
   @behaviour Instructor.Adapter
 
-  @default_config [
-    url: "http://localhost:8000/completion",
-    http_options: [receive_timeout: 60_000]
-  ]
+  @send_request_schema NimbleOptions.new!(
+                         http_client: [
+                           type: :atom,
+                           default: Req,
+                           doc: "Any module that follows `Req.post/2` interface"
+                         ],
+                         http_options: [
+                           type: :keyword_list,
+                           default: [receive_timeout: 60_000]
+                         ],
+                         url: [
+                           type: :string,
+                           required: true,
+                           doc:
+                             "API endpoint to use, for example `http://localhost:8000/completion`"
+                         ]
+                       )
 
-  @doc """
-  Run a completion against the llama.cpp server, not the open-ai compliant one.
-  This gives you more specific control over the grammar, and the ability to
-  provide other parameters to the specific LLM invocation.
-
-  You can read more about the parameters here:
-    https://github.com/ggerganov/llama.cpp/tree/master/examples/server
-
-  ## Examples
-
-    iex> Instructor.send_request(
-    ...>   model: "mistral-7b-instruct",
-    ...>   messages: [
-    ...>     %{ role: "user", content: "Classify the following text: Hello I am a Nigerian prince and I would like to send you money!" },
-    ...>   ],
-    ...>   response_model: response_model,
-    ...>   temperature: 0.5,
-    ...> )
-  """
   @impl Instructor.Adapter
   def send_request(params, opts) do
-    opts = Keyword.merge(@default_config, opts)
-    http_client = Keyword.fetch!(opts, :http_client)
-    url = Keyword.fetch!(opts, :url)
+    context =
+      opts
+      |> Keyword.get(:adapter_context, [])
+      |> NimbleOptions.validate!(@send_request_schema)
 
-    options = Keyword.merge(opts[:http_options], json: params)
+    options = Keyword.merge(context[:http_options], json: params)
 
-    case http_client.post(url, options) do
+    case context[:http_client].post(context[:url], options) do
       {:ok, %{status: 200, body: body}} -> {:ok, body}
       {:ok, response} -> {:error, response}
       {:error, reason} -> {:error, reason}
@@ -66,7 +61,7 @@ defmodule Instructor.Adapters.Llamacpp do
       end
 
     params
-    |> Map.put_new(:json_schema, opts[:json_schema])
+    |> Map.put_new(:json_schema, Keyword.fetch!(opts, :json_schema))
     |> Map.put_new(:system_prompt, mandatory_part <> optional_notes)
   end
 

@@ -4,34 +4,57 @@ defmodule Instructor.Adapters.Anthropic do
   """
   @behaviour Instructor.Adapter
 
-  @default_config [
-    url: "https://api.anthropic.com/v1/messages",
-    http_options: [receive_timeout: 60_000]
-  ]
-
-  @default_version "2023-06-01"
   @default_model "claude-3-5-sonnet-20240620"
   @default_max_tokens 1024
 
+  @send_request_schema NimbleOptions.new!(
+                         api_key: [
+                           type: :string,
+                           required: true,
+                           doc: "Anthropic API key"
+                         ],
+                         http_client: [
+                           type: :atom,
+                           default: Req,
+                           doc: "Any module that follows `Req.post/2` interface"
+                         ],
+                         http_options: [
+                           type: :keyword_list,
+                           default: [receive_timeout: 60_000]
+                         ],
+                         url: [
+                           type: :string,
+                           default: "https://api.anthropic.com/v1/messages",
+                           doc: "API endpoint to use for sending requests"
+                         ],
+                         version: [
+                           type: :string,
+                           default: "2023-06-01",
+                           doc:
+                             "Anthropic [API version](https://docs.anthropic.com/en/api/versioning)"
+                         ]
+                       )
+
   @impl Instructor.Adapter
   def send_request(params, opts) do
-    opts = Keyword.merge(@default_config, opts)
-    http_client = Keyword.fetch!(opts, :http_client)
-    api_key = Keyword.fetch!(opts, :api_key)
+    context =
+      opts
+      |> Keyword.get(:adapter_context, [])
+      |> NimbleOptions.validate!(@send_request_schema)
 
     headers = [
-      {"x-api-key", api_key},
-      {"anthropic-version", @default_version}
+      {"x-api-key", context[:api_key]},
+      {"anthropic-version", context[:version]}
     ]
 
     options =
-      opts[:http_options]
+      context[:http_options]
       |> Keyword.merge(json: params)
       |> Keyword.update(:headers, headers, fn client_side ->
         Enum.uniq_by(client_side ++ headers, &elem(&1, 0))
       end)
 
-    case http_client.post(opts[:url], options) do
+    case context[:http_client].post(context[:url], options) do
       {:ok, %{status: 200, body: body}} -> {:ok, body}
       {:ok, response} -> {:error, response}
       {:error, reason} -> {:error, reason}
@@ -64,7 +87,7 @@ defmodule Instructor.Adapters.Anthropic do
         name: "Schema",
         description:
           "Correctly extracted `Schema` with all the required parameters with correct types",
-        input_schema: opts[:json_schema]
+        input_schema: Keyword.fetch!(opts, :json_schema)
       }
     ])
   end

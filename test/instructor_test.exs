@@ -9,7 +9,10 @@ defmodule InstructorTest do
 
   describe "prepare_prompt/2" do
     test "calls adapter callback with json_schema" do
-      params = %{messages: [%{role: "user", content: "Who was the first president of the USA"}]}
+      params = %{
+        messages: [%{role: "user", content: "Who was the first president of the USA"}],
+        model: "gpt-4o"
+      }
 
       expect(MockAdapter, :initial_prompt, fn p, opts ->
         assert params == p
@@ -20,7 +23,6 @@ defmodule InstructorTest do
 
       assert :ok =
                Instructor.prepare_prompt(params,
-                 model: "gpt-3.5-turbo",
                  response_model: %{name: :string, birth_date: :date},
                  adapter: MockAdapter
                )
@@ -31,17 +33,16 @@ defmodule InstructorTest do
 
       expect(MockAdapter, :initial_prompt, fn p, opts ->
         assert params == p
-        assert opts[:json_schema] == :json_schema
+        assert opts[:json_schema] == %{json: :schema}
 
         :ok
       end)
 
       assert :ok =
                Instructor.prepare_prompt(params,
-                 model: "gpt-3.5-turbo",
                  response_model: %{name: :string, birth_date: :date},
                  adapter: MockAdapter,
-                 json_schema: :json_schema
+                 json_schema: %{json: :schema}
                )
     end
   end
@@ -104,7 +105,12 @@ defmodule InstructorTest do
       expect(MockAdapter, :parse_response, fn _, _opts -> {:ok, %{"name" => "foo"}} end)
 
       validate = fn %Ecto.Changeset{} = cs, opts ->
-        assert [adapter: MockAdapter, response_model: %{name: :string}, validate_changeset: _] =
+        assert [
+                 max_retries: 0,
+                 adapter: MockAdapter,
+                 response_model: %{name: :string},
+                 validate_changeset: _
+               ] =
                  opts
 
         cs
@@ -130,7 +136,7 @@ defmodule InstructorTest do
 
         @impl true
         def validate_changeset(cs, opts) do
-          Ecto.Changeset.add_error(cs, :name, opts[:always_error])
+          Ecto.Changeset.add_error(cs, :name, opts[:extra])
         end
       end
 
@@ -142,7 +148,7 @@ defmodule InstructorTest do
                Instructor.consume_response(:foo, %{},
                  adapter: MockAdapter,
                  response_model: ImpossibleGuess,
-                 always_error: "Wrong!"
+                 extra: "Wrong!"
                )
     end
   end
@@ -154,7 +160,6 @@ defmodule InstructorTest do
       }
 
       options = [
-        model: "gpt-3.5-turbo",
         adapter: MockAdapter,
         response_model: %{name: :string, birth_date: :date}
       ]
@@ -186,7 +191,6 @@ defmodule InstructorTest do
 
       options = [
         max_retries: 1,
-        model: "gpt-3.5-turbo",
         adapter: MockAdapter,
         response_model: %{name: :string, birth_date: :date}
       ]
@@ -224,7 +228,6 @@ defmodule InstructorTest do
 
       options = [
         max_retries: 1,
-        model: "gpt-3.5-turbo",
         adapter: MockAdapter,
         response_model: %{name: :string, birth_date: :date}
       ]
@@ -258,7 +261,6 @@ defmodule InstructorTest do
     test "no retries on request error" do
       options = [
         max_retries: 1,
-        model: "gpt-3.5-turbo",
         adapter: MockAdapter,
         response_model: %{name: :string, birth_date: :date}
       ]
@@ -273,7 +275,6 @@ defmodule InstructorTest do
     test "no retries on consume error" do
       options = [
         max_retries: 1,
-        model: "gpt-3.5-turbo",
         adapter: MockAdapter,
         response_model: %{name: :string, birth_date: :date}
       ]

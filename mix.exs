@@ -114,6 +114,7 @@ defmodule Instructor.MixProject do
       {:ecto, "~> 3.12"},
       {:jason, "~> 1.4.0"},
       {:req, "~> 0.5 or ~> 1.0"},
+      {:nimble_options, "~> 1.1"},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:mox, "~> 1.2", only: :test}
     ]
