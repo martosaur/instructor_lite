@@ -23,11 +23,11 @@ defmodule Instructor.Adapters.LlamacppTest do
     end
   end
 
-  describe "retry_prompt/4" do
+  describe "retry_prompt/5" do
     test "appends to prompt string" do
       params = %{prompt: "Please give me test data"}
 
-      assert Llamacpp.retry_prompt(params, %{foo: "bar"}, "list of errors", nil) == %{
+      assert Llamacpp.retry_prompt(params, %{foo: "bar"}, "list of errors", nil, []) == %{
                prompt: """
                Please give me test data
                Your previous response:
@@ -42,31 +42,31 @@ defmodule Instructor.Adapters.LlamacppTest do
     end
   end
 
-  describe "from_response/1" do
+  describe "parse_response/2" do
     test "decodes json from expected output" do
       response = %{
         "content" => "{\"name\": \"George Washington\", \"birth_date\": \"1732-02-22\" }\n"
       }
 
       assert {:ok, %{"birth_date" => "1732-02-22", "name" => "George Washington"}} =
-               Llamacpp.from_response(response)
+               Llamacpp.parse_response(response, [])
     end
 
     test "invalid json" do
       response = %{"content" => "{{"}
 
-      assert {:error, %Jason.DecodeError{}} = Llamacpp.from_response(response)
+      assert {:error, %Jason.DecodeError{}} = Llamacpp.parse_response(response, [])
     end
 
     test "unexpected content" do
       response = "Internal Server Error"
 
       assert {:error, :unexpected_response, "Internal Server Error"} =
-               Llamacpp.from_response(response)
+               Llamacpp.parse_response(response, [])
     end
   end
 
-  describe "chat_completion/2" do
+  describe "send_request/2" do
     test "overridable options" do
       params = %{hello: "world"}
 
@@ -87,7 +87,7 @@ defmodule Instructor.Adapters.LlamacppTest do
         {:ok, %{status: 200, body: "response"}}
       end)
 
-      assert {:ok, "response"} = Llamacpp.chat_completion(params, opts)
+      assert {:ok, "response"} = Llamacpp.send_request(params, opts)
     end
 
     test "non-200 response" do
@@ -99,7 +99,7 @@ defmodule Instructor.Adapters.LlamacppTest do
         {:ok, %{status: 400, body: "response"}}
       end)
 
-      assert {:error, %{status: 400, body: "response"}} = Llamacpp.chat_completion(%{}, opts)
+      assert {:error, %{status: 400, body: "response"}} = Llamacpp.send_request(%{}, opts)
     end
 
     test "request error" do
@@ -109,7 +109,7 @@ defmodule Instructor.Adapters.LlamacppTest do
 
       expect(HTTPClient.Mock, :post, fn _url, _options -> {:error, :timeout} end)
 
-      assert {:error, :timeout} = Llamacpp.chat_completion(%{}, opts)
+      assert {:error, :timeout} = Llamacpp.send_request(%{}, opts)
     end
   end
 end

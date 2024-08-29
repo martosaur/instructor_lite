@@ -39,11 +39,11 @@ defmodule Instructor.Adapters.OpenAITest do
     end
   end
 
-  describe "retry_prompt/4" do
+  describe "retry_prompt/5" do
     test "adds new chat entries" do
       params = %{messages: [], model: "gpt-4o-mini"}
 
-      assert OpenAI.retry_prompt(params, %{foo: "bar"}, "list of errors", nil) == %{
+      assert OpenAI.retry_prompt(params, %{foo: "bar"}, "list of errors", nil, []) == %{
                messages: [
                  %{content: "{\"foo\":\"bar\"}", role: "assistant"},
                  %{
@@ -57,7 +57,7 @@ defmodule Instructor.Adapters.OpenAITest do
     end
   end
 
-  describe "from_response/1" do
+  describe "parse_response/2" do
     test "decodes json from expected output" do
       response = %{
         "choices" => [
@@ -78,7 +78,7 @@ defmodule Instructor.Adapters.OpenAITest do
       }
 
       assert {:ok, %{"birth_date" => "1732-02-22", "name" => "George Washington"}} =
-               OpenAI.from_response(response)
+               OpenAI.parse_response(response, [])
     end
 
     test "invalid json" do
@@ -100,7 +100,7 @@ defmodule Instructor.Adapters.OpenAITest do
         "object" => "chat.completion"
       }
 
-      assert {:error, %Jason.DecodeError{}} = OpenAI.from_response(response)
+      assert {:error, %Jason.DecodeError{}} = OpenAI.parse_response(response, [])
     end
 
     test "returns refusal" do
@@ -122,18 +122,18 @@ defmodule Instructor.Adapters.OpenAITest do
       }
 
       assert {:error, :refusal, "I'm sorry, I cannot assist with that request."} =
-               OpenAI.from_response(response)
+               OpenAI.parse_response(response, [])
     end
 
     test "unexpected content" do
       response = "Internal Server Error"
 
       assert {:error, :unexpected_response, "Internal Server Error"} =
-               OpenAI.from_response(response)
+               OpenAI.parse_response(response, [])
     end
   end
 
-  describe "chat_completion/2" do
+  describe "send_request/2" do
     test "overridable options" do
       params = %{hello: "world"}
 
@@ -156,7 +156,7 @@ defmodule Instructor.Adapters.OpenAITest do
         {:ok, %{status: 200, body: "response"}}
       end)
 
-      assert {:ok, "response"} = OpenAI.chat_completion(params, opts)
+      assert {:ok, "response"} = OpenAI.send_request(params, opts)
     end
 
     test "non-200 response" do
@@ -169,7 +169,7 @@ defmodule Instructor.Adapters.OpenAITest do
         {:ok, %{status: 400, body: "response"}}
       end)
 
-      assert {:error, %{status: 400, body: "response"}} = OpenAI.chat_completion(%{}, opts)
+      assert {:error, %{status: 400, body: "response"}} = OpenAI.send_request(%{}, opts)
     end
 
     test "request error" do
@@ -180,7 +180,7 @@ defmodule Instructor.Adapters.OpenAITest do
 
       expect(HTTPClient.Mock, :post, fn _url, _options -> {:error, :timeout} end)
 
-      assert {:error, :timeout} = OpenAI.chat_completion(%{}, opts)
+      assert {:error, :timeout} = OpenAI.send_request(%{}, opts)
     end
   end
 end

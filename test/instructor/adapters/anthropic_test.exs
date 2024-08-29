@@ -36,7 +36,7 @@ defmodule Instructor.Adapters.AnthropicTest do
     end
   end
 
-  describe "retry_prompt/4" do
+  describe "retry_prompt/5" do
     test "adds assistant reply and tool call error" do
       params = %{messages: []}
 
@@ -52,7 +52,7 @@ defmodule Instructor.Adapters.AnthropicTest do
         "role" => "assistant"
       }
 
-      assert Anthropic.retry_prompt(params, nil, "list of errors", response) == %{
+      assert Anthropic.retry_prompt(params, nil, "list of errors", response, []) == %{
                messages: [
                  %{
                    "content" => [
@@ -85,7 +85,7 @@ defmodule Instructor.Adapters.AnthropicTest do
     end
   end
 
-  describe "from_response/1" do
+  describe "parse_response/2" do
     test "decodes json from expected output" do
       response = %{
         "content" => [
@@ -106,18 +106,18 @@ defmodule Instructor.Adapters.AnthropicTest do
       }
 
       assert {:ok, %{"birth_date" => "1732-02-22", "name" => "George Washington"}} =
-               Anthropic.from_response(response)
+               Anthropic.parse_response(response, [])
     end
 
     test "unexpected content" do
       response = "Internal Server Error"
 
       assert {:error, :unexpected_response, "Internal Server Error"} =
-               Anthropic.from_response(response)
+               Anthropic.parse_response(response, [])
     end
   end
 
-  describe "chat_completion/2" do
+  describe "send_request/2" do
     test "overridable options" do
       params = %{hello: "world"}
 
@@ -150,7 +150,7 @@ defmodule Instructor.Adapters.AnthropicTest do
         {:ok, %{status: 200, body: "response"}}
       end)
 
-      assert {:ok, "response"} = Anthropic.chat_completion(params, opts)
+      assert {:ok, "response"} = Anthropic.send_request(params, opts)
     end
 
     test "non-200 response" do
@@ -163,7 +163,7 @@ defmodule Instructor.Adapters.AnthropicTest do
         {:ok, %{status: 400, body: "response"}}
       end)
 
-      assert {:error, %{status: 400, body: "response"}} = Anthropic.chat_completion(%{}, opts)
+      assert {:error, %{status: 400, body: "response"}} = Anthropic.send_request(%{}, opts)
     end
 
     test "request error" do
@@ -174,7 +174,7 @@ defmodule Instructor.Adapters.AnthropicTest do
 
       expect(HTTPClient.Mock, :post, fn _url, _options -> {:error, :timeout} end)
 
-      assert {:error, :timeout} = Anthropic.chat_completion(%{}, opts)
+      assert {:error, :timeout} = Anthropic.send_request(%{}, opts)
     end
   end
 end

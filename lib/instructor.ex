@@ -81,7 +81,7 @@ defmodule Instructor do
   end
 
   defp do_chat_completion(params, opts) do
-    with {:ok, response} <- opts[:adapter].chat_completion(params, opts) do
+    with {:ok, response} <- opts[:adapter].send_request(params, opts) do
       case consume_response(response, params, opts) do
         {:error, %Ecto.Changeset{} = cs, new_params} ->
           if opts[:max_retries] > 0 do
@@ -233,7 +233,7 @@ defmodule Instructor do
         {%{}, response_model}
       end
 
-    with {:ok, resp_params} <- adapter.from_response(response) do
+    with {:ok, resp_params} <- adapter.parse_response(response, opts) do
       blank
       |> cast(resp_params)
       |> call_validate(response_model, opts)
@@ -243,7 +243,7 @@ defmodule Instructor do
 
         changeset ->
           errors = Instructor.ErrorFormatter.format_errors(changeset)
-          new_params = adapter.retry_prompt(params, resp_params, errors, response)
+          new_params = adapter.retry_prompt(params, resp_params, errors, response, opts)
 
           {:error, changeset, new_params}
       end

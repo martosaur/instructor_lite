@@ -48,7 +48,7 @@ defmodule InstructorTest do
 
   describe "consume_response/3" do
     test "response matches schema" do
-      expect(MockAdapter, :from_response, fn response ->
+      expect(MockAdapter, :parse_response, fn response, _opts ->
         assert response == :foo
 
         params = %{
@@ -67,7 +67,7 @@ defmodule InstructorTest do
     end
 
     test "error from adapter" do
-      expect(MockAdapter, :from_response, fn _response ->
+      expect(MockAdapter, :parse_response, fn _response, _opts ->
         {:error, :foobar}
       end)
 
@@ -83,8 +83,8 @@ defmodule InstructorTest do
       resp_params = %{name: "George Washington", birth_date: 17_320_222}
 
       MockAdapter
-      |> expect(:from_response, fn _response -> {:ok, resp_params} end)
-      |> expect(:retry_prompt, fn p, r, errors, response ->
+      |> expect(:parse_response, fn _response, _opts -> {:ok, resp_params} end)
+      |> expect(:retry_prompt, fn p, r, errors, response, _opts ->
         assert params == p
         assert resp_params == r
         assert errors == "birth_date - is invalid"
@@ -101,7 +101,7 @@ defmodule InstructorTest do
     end
 
     test "calls validate_changeset from opts if present" do
-      expect(MockAdapter, :from_response, fn _ -> {:ok, %{"name" => "foo"}} end)
+      expect(MockAdapter, :parse_response, fn _, _opts -> {:ok, %{"name" => "foo"}} end)
 
       validate = fn %Ecto.Changeset{} = cs, opts ->
         assert [adapter: MockAdapter, response_model: %{name: :string}, validate_changeset: _] =
@@ -135,8 +135,8 @@ defmodule InstructorTest do
       end
 
       MockAdapter
-      |> expect(:from_response, fn _ -> {:ok, %{"guess" => "Banana"}} end)
-      |> expect(:retry_prompt, fn _, _, _, _ -> "new_params" end)
+      |> expect(:parse_response, fn _, _opts -> {:ok, %{"guess" => "Banana"}} end)
+      |> expect(:retry_prompt, fn _, _, _, _, _ -> "new_params" end)
 
       assert {:error, %Ecto.Changeset{errors: [name: {"Wrong!", []}]}, "new_params"} =
                Instructor.consume_response(:foo, %{},
@@ -161,13 +161,13 @@ defmodule InstructorTest do
 
       MockAdapter
       |> expect(:initial_prompt, fn _json_schema, _params -> params end)
-      |> expect(:chat_completion, fn p, opts ->
+      |> expect(:send_request, fn p, opts ->
         assert params == p
         assert opts == [{:max_retries, 0} | options]
 
         {:ok, :response_body}
       end)
-      |> expect(:from_response, fn :response_body ->
+      |> expect(:parse_response, fn :response_body, _opts ->
         {:ok,
          %{
            name: "George Washington",
@@ -193,17 +193,19 @@ defmodule InstructorTest do
 
       MockAdapter
       |> expect(:initial_prompt, fn _json_schema, _params -> params end)
-      |> expect(:chat_completion, fn _p, _opts -> {:ok, :response_body} end)
-      |> expect(:from_response, fn :response_body ->
+      |> expect(:send_request, fn _p, _opts -> {:ok, :response_body} end)
+      |> expect(:parse_response, fn :response_body, _opts ->
         {:ok,
          %{
            name: "George Washington",
            birth_date: 17_320_222
          }}
       end)
-      |> expect(:retry_prompt, fn _params, _resp_params, _errors, _response -> :new_prompt end)
-      |> expect(:chat_completion, fn :new_prompt, _opts -> {:ok, :response_body} end)
-      |> expect(:from_response, fn :response_body ->
+      |> expect(:retry_prompt, fn _params, _resp_params, _errors, _response, _opts ->
+        :new_prompt
+      end)
+      |> expect(:send_request, fn :new_prompt, _opts -> {:ok, :response_body} end)
+      |> expect(:parse_response, fn :response_body, _opts ->
         {:ok,
          %{
            name: "George Washington",
@@ -229,24 +231,26 @@ defmodule InstructorTest do
 
       MockAdapter
       |> expect(:initial_prompt, fn _json_schema, _params -> params end)
-      |> expect(:chat_completion, fn _p, _opts -> {:ok, :response_body} end)
-      |> expect(:from_response, fn :response_body ->
+      |> expect(:send_request, fn _p, _opts -> {:ok, :response_body} end)
+      |> expect(:parse_response, fn :response_body, _opts ->
         {:ok,
          %{
            name: "George Washington",
            birth_date: 17_320_222
          }}
       end)
-      |> expect(:retry_prompt, fn _params, _resp_params, _errors, _response -> :new_prompt end)
-      |> expect(:chat_completion, fn :new_prompt, _opts -> {:ok, :response_body} end)
-      |> expect(:from_response, fn :response_body ->
+      |> expect(:retry_prompt, fn _params, _resp_params, _errors, _response, _opts ->
+        :new_prompt
+      end)
+      |> expect(:send_request, fn :new_prompt, _opts -> {:ok, :response_body} end)
+      |> expect(:parse_response, fn :response_body, _opts ->
         {:ok,
          %{
            name: "George Washington",
            birth_date: 17_320_222
          }}
       end)
-      |> expect(:retry_prompt, fn :new_prompt, _resp_params, _errors, _response -> :foo end)
+      |> expect(:retry_prompt, fn :new_prompt, _resp_params, _errors, _response, _opts -> :foo end)
 
       assert {:error, %Ecto.Changeset{valid?: false}} = Instructor.chat_completion(%{}, options)
     end
@@ -261,7 +265,7 @@ defmodule InstructorTest do
 
       MockAdapter
       |> expect(:initial_prompt, fn _json_schema, _params -> :params end)
-      |> expect(:chat_completion, fn :params, _opts -> {:error, :timeout} end)
+      |> expect(:send_request, fn :params, _opts -> {:error, :timeout} end)
 
       assert {:error, :timeout} = Instructor.chat_completion(%{}, options)
     end
@@ -276,8 +280,8 @@ defmodule InstructorTest do
 
       MockAdapter
       |> expect(:initial_prompt, fn _json_schema, _params -> :params end)
-      |> expect(:chat_completion, fn :params, _opts -> {:ok, :response_body} end)
-      |> expect(:from_response, fn :response_body -> {:error, :unexpected_response} end)
+      |> expect(:send_request, fn :params, _opts -> {:ok, :response_body} end)
+      |> expect(:parse_response, fn :response_body, _opts -> {:error, :unexpected_response} end)
 
       assert {:error, :unexpected_response} = Instructor.chat_completion(%{}, options)
     end

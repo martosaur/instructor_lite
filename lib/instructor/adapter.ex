@@ -1,9 +1,16 @@
 defmodule Instructor.Adapter do
   @moduledoc """
-  Behavior for `Instructor.Adapter`.
+  Behaviour for `Instructor.Adapter`.
   """
-  @callback chat_completion(map(), Keyword.t()) :: any()
-  @callback initial_prompt(map(), map()) :: map()
-  @callback retry_prompt(map(), map(), String.t(), map()) :: map()
-  @callback from_response(any()) :: any()
+  @type opts :: Keyword.t()
+  @type params :: map()
+  @type response :: any()
+  @type parsed_response :: map()
+
+  @callback send_request(params(), opts()) :: {:ok, response()} | {:error, any()}
+  @callback initial_prompt(params(), opts()) :: params()
+  @callback retry_prompt(params(), parsed_response(), errors :: String.t(), response(), opts()) ::
+              params()
+  @callback parse_response(response(), opts()) ::
+              {:ok, parsed_response()} | {:error, any()} | {:error, reason :: atom(), any()}
 end

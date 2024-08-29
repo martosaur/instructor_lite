@@ -24,7 +24,7 @@ defmodule Instructor.Adapters.Llamacpp do
 
   ## Examples
 
-    iex> Instructor.chat_completion(
+    iex> Instructor.send_request(
     ...>   model: "mistral-7b-instruct",
     ...>   messages: [
     ...>     %{ role: "user", content: "Classify the following text: Hello I am a Nigerian prince and I would like to send you money!" },
@@ -33,8 +33,8 @@ defmodule Instructor.Adapters.Llamacpp do
     ...>   temperature: 0.5,
     ...> )
   """
-  @impl true
-  def chat_completion(params, opts) do
+  @impl Instructor.Adapter
+  def send_request(params, opts) do
     opts = Keyword.merge(@default_config, opts)
     http_client = Keyword.fetch!(opts, :http_client)
     url = Keyword.fetch!(opts, :url)
@@ -48,7 +48,7 @@ defmodule Instructor.Adapters.Llamacpp do
     end
   end
 
-  @impl true
+  @impl Instructor.Adapter
   def initial_prompt(params, opts) do
     mandatory_part = """
     As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
@@ -70,8 +70,8 @@ defmodule Instructor.Adapters.Llamacpp do
     |> Map.put_new(:system_prompt, mandatory_part <> optional_notes)
   end
 
-  @impl true
-  def retry_prompt(params, resp_params, errors, _response) do
+  @impl Instructor.Adapter
+  def retry_prompt(params, resp_params, errors, _response, _opts) do
     do_better = """
     Your previous response:
 
@@ -87,8 +87,8 @@ defmodule Instructor.Adapters.Llamacpp do
     end)
   end
 
-  @impl true
-  def from_response(response) do
+  @impl Instructor.Adapter
+  def parse_response(response, _opts) do
     case response do
       %{"content" => json} ->
         Jason.decode(json)

@@ -13,8 +13,8 @@ defmodule Instructor.Adapters.Anthropic do
   @default_model "claude-3-5-sonnet-20240620"
   @default_max_tokens 1024
 
-  @impl true
-  def chat_completion(params, opts) do
+  @impl Instructor.Adapter
+  def send_request(params, opts) do
     opts = Keyword.merge(@default_config, opts)
     http_client = Keyword.fetch!(opts, :http_client)
     api_key = Keyword.fetch!(opts, :api_key)
@@ -38,7 +38,7 @@ defmodule Instructor.Adapters.Anthropic do
     end
   end
 
-  @impl true
+  @impl Instructor.Adapter
   def initial_prompt(params, opts) do
     mandatory_part = """
     As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
@@ -69,8 +69,8 @@ defmodule Instructor.Adapters.Anthropic do
     ])
   end
 
-  @impl true
-  def retry_prompt(params, _resp_params, errors, response) do
+  @impl Instructor.Adapter
+  def retry_prompt(params, _resp_params, errors, response, _opts) do
     %{"content" => [%{"id" => tool_use_id}]} =
       assistant_reply = Map.take(response, ["content", "role"])
 
@@ -96,8 +96,8 @@ defmodule Instructor.Adapters.Anthropic do
     Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
   end
 
-  @impl true
-  def from_response(response) do
+  @impl Instructor.Adapter
+  def parse_response(response, _opts) do
     case response do
       %{"stop_reason" => "tool_use", "content" => [%{"input" => decoded}]} ->
         {:ok, decoded}
