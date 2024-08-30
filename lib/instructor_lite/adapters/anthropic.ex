@@ -1,8 +1,8 @@
-defmodule Instructor.Adapters.Anthropic do
+defmodule InstructorLite.Adapters.Anthropic do
   @moduledoc """
-  Documentation for `Instructor.Adapters.Anthropic`
+  Documentation for `InstructorLite.Adapters.Anthropic`
   """
-  @behaviour Instructor.Adapter
+  @behaviour InstructorLite.Adapter
 
   @default_model "claude-3-5-sonnet-20240620"
   @default_max_tokens 1024
@@ -35,7 +35,7 @@ defmodule Instructor.Adapters.Anthropic do
                          ]
                        )
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def send_request(params, opts) do
     context =
       opts
@@ -61,7 +61,7 @@ defmodule Instructor.Adapters.Anthropic do
     end
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
     mandatory_part = """
     As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
@@ -92,7 +92,7 @@ defmodule Instructor.Adapters.Anthropic do
     ])
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def retry_prompt(params, _resp_params, errors, response, _opts) do
     %{"content" => [%{"id" => tool_use_id}]} =
       assistant_reply = Map.take(response, ["content", "role"])
@@ -119,7 +119,7 @@ defmodule Instructor.Adapters.Anthropic do
     Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def parse_response(response, _opts) do
     case response do
       %{"stop_reason" => "tool_use", "content" => [%{"input" => decoded}]} ->

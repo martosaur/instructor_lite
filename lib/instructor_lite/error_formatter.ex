@@ -1,4 +1,4 @@
-defmodule Instructor.ErrorFormatter do
+defmodule InstructorLite.ErrorFormatter do
   @moduledoc false
 
   alias Ecto.Changeset

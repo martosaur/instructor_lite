@@ -1,4 +1,4 @@
-defmodule Instructor.JSONSchema do
+defmodule InstructorLite.JSONSchema do
   defguardp is_ecto_schema(mod) when is_atom(mod)
   defguardp is_ecto_types(types) when is_map(types)
 
@@ -281,7 +281,7 @@ defmodule Instructor.JSONSchema do
     if function_exported?(mod, :to_json_schema, 0) do
       mod.to_json_schema()
     else
-      raise "Unsupported type: #{inspect(mod)}, please implement `to_json_schema/0` via `use Instructor.EctoType`"
+      raise "Unsupported type: #{inspect(mod)}, please implement `to_json_schema/0` via `use InstructorLite.EctoType`"
     end
   end
 end

@@ -1,12 +1,12 @@
-defmodule Instructor.MixProject do
+defmodule InstructorLite.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/martosaur/instructor_ex"
+  @source_url "https://github.com/martosaur/instructor_lite"
 
   def project do
     [
-      app: :instructor,
+      app: :instructor_lite,
       version: @version,
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,

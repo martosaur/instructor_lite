@@ -1,10 +1,10 @@
-defmodule Instructor.Adapters.AnthropicTest do
+defmodule InstructorLite.Adapters.AnthropicTest do
   use ExUnit.Case, async: true
 
   import Mox
 
-  alias Instructor.Adapters.Anthropic
-  alias Instructor.HTTPClient
+  alias InstructorLite.Adapters.Anthropic
+  alias InstructorLite.HTTPClient
 
   setup :verify_on_exit!
 

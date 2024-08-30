@@ -1,13 +1,13 @@
-defmodule Instructor.Instruction do
+defmodule InstructorLite.Instruction do
   @moduledoc """
-  `use Instructor.Instruction` is a way to make your Ecto schema into an Instruction, which provides additional callbacks used by Instructor.
+  `use InstructorLite.Instruction` is a way to make your Ecto schema into an Instruction, which provides additional callbacks used by InstructorLite.
     
   ## Example
 
   ```
   defmodule SpamPrediction do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @notes \"""
     Field Descriptions:
@@ -22,7 +22,7 @@ defmodule Instructor.Instruction do
       field(:score, :float)
     end
 
-    @impl Instructor.Instruction
+    @impl InstructorLite.Instruction
     def validate_changeset(changeset, _opts) do
       Ecto.Changeset.validate_number(changeset, :score,
         greater_than_or_equal_to: 0.0,
@@ -32,9 +32,9 @@ defmodule Instructor.Instruction do
   end
   ```
     
-  > #### `use Instructor.Instruction` {: .info}
+  > #### `use InstructorLite.Instruction` {: .info}
   >
-  > When you `use Instructor.Instruction`, the Instruction module will set `@behaviour Instructor.Instruction`, and define default implementations of `c:notes/0` and `c:json_schema/0` callbacks.
+  > When you `use InstructorLite.Instruction`, the Instruction module will set `@behaviour InstructorLite.Instruction`, and define default implementations of `c:notes/0` and `c:json_schema/0` callbacks.
   """
 
   @doc """
@@ -47,16 +47,16 @@ defmodule Instructor.Instruction do
   @doc """
   Defines JSON schema for the instruction.
     
-  By default, `Instructor.JSONSchema.from_ecto_schema/1` is called at runtime every time Instructor needs to convert an Ecto schema to JSON schema. However, you can bake your own JSON schema into the `c:json_schema/0` callback to eliminate the need to do it on every call.
+  By default, `InstructorLite.JSONSchema.from_ecto_schema/1` is called at runtime every time InstructorLite needs to convert an Ecto schema to JSON schema. However, you can bake your own JSON schema into the `c:json_schema/0` callback to eliminate the need to do it on every call.
 
   > #### Tip {: .tip}
   > 
-  > Take advantage of this callback! Most JSON schemas are known ahead of time, so there is no need to constantly build them at runtime. In addition, `Instructor.JSONSchema` module aims to generate one-size-fits-all schema, so it's very unlikely to take full advantage of JSON capabilities of your LLM of choice.   
+  > Take advantage of this callback! Most JSON schemas are known ahead of time, so there is no need to constantly build them at runtime. In addition, `InstructorLite.JSONSchema` module aims to generate one-size-fits-all schema, so it's very unlikely to take full advantage of JSON capabilities of your LLM of choice.   
   """
   @callback json_schema() :: map()
 
   @doc """
-  Called by `Instructor.consume_response/3` as part of changeset validation.
+  Called by `InstructorLite.consume_response/3` as part of changeset validation.
 
   It has full access to all `opts`. If you need to pass an arbitrary term to this callback, use the `extra` key.
 
@@ -66,14 +66,14 @@ defmodule Instructor.Instruction do
   # Let's play a guessing game!
   defmodule CoinGuess do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
       field(:guess, Ecto.Enum, values: [:heads, :tails])
     end
 
-    @impl Instructor.Instruction
+    @impl InstructorLite.Instruction
     def validate_changeset(cs, opts) do
       target = Keyword.fetch!(opts, :extra)
 
@@ -85,14 +85,14 @@ defmodule Instructor.Instruction do
   end
   ```
   """
-  @callback validate_changeset(Ecto.Changeset.t(), Instructor.opts()) :: Ecto.Changeset.t()
+  @callback validate_changeset(Ecto.Changeset.t(), InstructorLite.opts()) :: Ecto.Changeset.t()
 
   @optional_callbacks validate_changeset: 2
 
   defmacro __before_compile__(env) do
     unless Module.defines?(env.module, {:notes, 0}) do
       quote do
-        @impl Instructor.Instruction
+        @impl InstructorLite.Instruction
         def notes(), do: @notes
       end
     end
@@ -100,12 +100,12 @@ defmodule Instructor.Instruction do
 
   defmacro __using__(_opts) do
     quote do
-      @behaviour Instructor.Instruction
-      @before_compile Instructor.Instruction
+      @behaviour InstructorLite.Instruction
+      @before_compile InstructorLite.Instruction
       @notes nil
 
-      @impl Instructor.Instruction
-      def json_schema(), do: Instructor.JSONSchema.from_ecto_schema(__MODULE__)
+      @impl InstructorLite.Instruction
+      def json_schema(), do: InstructorLite.JSONSchema.from_ecto_schema(__MODULE__)
 
       defoverridable json_schema: 0
     end

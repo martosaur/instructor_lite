@@ -1,15 +1,15 @@
-defmodule Instructor.IntegrationTest do
+defmodule InstructorLite.IntegrationTest do
   use ExUnit.Case, async: true
 
-  alias Instructor.TestSchemas
-  alias Instructor.Adapters.{Anthropic, OpenAI, Llamacpp}
+  alias InstructorLite.TestSchemas
+  alias InstructorLite.Adapters.{Anthropic, OpenAI, Llamacpp}
 
   @moduletag :integration
 
   describe "OpenAI" do
     test "schemaless" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -20,7 +20,7 @@ defmodule Instructor.IntegrationTest do
           adapter: OpenAI,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :openai_key)
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
           ]
         )
 
@@ -31,7 +31,7 @@ defmodule Instructor.IntegrationTest do
 
     test "basic ecto schema" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -46,7 +46,7 @@ defmodule Instructor.IntegrationTest do
           adapter: OpenAI,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :openai_key)
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
           ]
         )
 
@@ -56,7 +56,7 @@ defmodule Instructor.IntegrationTest do
 
     test "with embedded" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -70,7 +70,7 @@ defmodule Instructor.IntegrationTest do
           adapter: OpenAI,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :openai_key)
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
           ]
         )
 
@@ -80,7 +80,7 @@ defmodule Instructor.IntegrationTest do
 
     test "all ecto types" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -94,7 +94,7 @@ defmodule Instructor.IntegrationTest do
           adapter: OpenAI,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :openai_key)
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
           ]
         )
 
@@ -139,7 +139,7 @@ defmodule Instructor.IntegrationTest do
 
     test "with validate_changeset" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -154,7 +154,7 @@ defmodule Instructor.IntegrationTest do
           adapter: OpenAI,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :openai_key)
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
           ],
           extra: :tails
         )
@@ -168,7 +168,7 @@ defmodule Instructor.IntegrationTest do
       schema = %{name: :string, birth_date: :date}
 
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
@@ -178,7 +178,7 @@ defmodule Instructor.IntegrationTest do
           adapter: Anthropic,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+            api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)
           ]
         )
 
@@ -189,7 +189,7 @@ defmodule Instructor.IntegrationTest do
 
     test "basic ecto schema" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             messages: [
               %{
@@ -203,7 +203,7 @@ defmodule Instructor.IntegrationTest do
           adapter: Anthropic,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+            api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)
           ]
         )
 
@@ -213,7 +213,7 @@ defmodule Instructor.IntegrationTest do
 
     test "with embedded" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             messages: [
               %{
@@ -226,7 +226,7 @@ defmodule Instructor.IntegrationTest do
           adapter: Anthropic,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+            api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)
           ]
         )
 
@@ -236,7 +236,7 @@ defmodule Instructor.IntegrationTest do
 
     test "all ecto types" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             messages: [
               %{
@@ -249,7 +249,7 @@ defmodule Instructor.IntegrationTest do
           adapter: Anthropic,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+            api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)
           ]
         )
 
@@ -294,7 +294,7 @@ defmodule Instructor.IntegrationTest do
 
     test "with validate_changeset" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             messages: [
               %{
@@ -308,7 +308,7 @@ defmodule Instructor.IntegrationTest do
           adapter: Anthropic,
           adapter_context: [
             http_client: Req,
-            api_key: Application.fetch_env!(:instructor, :anthropic_key)
+            api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)
           ],
           extra: :tails
         )
@@ -320,13 +320,13 @@ defmodule Instructor.IntegrationTest do
   describe "Llamacpp" do
     test "schemaless" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{prompt: "Who was the first president of the USA?"},
           response_model: %{name: :string, number_of_terms: :integer},
           adapter: Llamacpp,
           adapter_context: [
             http_client: Req,
-            url: Application.fetch_env!(:instructor, :llamacpp_url)
+            url: Application.fetch_env!(:instructor_lite, :llamacpp_url)
           ]
         )
 
@@ -337,7 +337,7 @@ defmodule Instructor.IntegrationTest do
 
     test "basic ecto schema" do
       result =
-        Instructor.instruct(
+        InstructorLite.instruct(
           %{
             prompt:
               "Classify the following text: Hello, I am a Nigerian prince and I would like to give you $1,000,000."
@@ -346,7 +346,7 @@ defmodule Instructor.IntegrationTest do
           adapter: Llamacpp,
           adapter_context: [
             http_client: Req,
-            url: Application.fetch_env!(:instructor, :llamacpp_url)
+            url: Application.fetch_env!(:instructor_lite, :llamacpp_url)
           ]
         )
 

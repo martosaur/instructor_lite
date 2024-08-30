@@ -1,20 +1,20 @@
-defmodule Instructor do
-  alias Instructor.JSONSchema
-  alias Instructor.Adapters.OpenAI
-  alias Instructor.Adapter
+defmodule InstructorLite do
+  alias InstructorLite.JSONSchema
+  alias InstructorLite.Adapters.OpenAI
+  alias InstructorLite.Adapter
 
   @options_schema NimbleOptions.new!(
                     response_model: [
                       type: {:or, [:atom, :map]},
                       required: true,
                       doc:
-                        "A module implementing `Instructor.Instruction` behaviour, Ecto schema or [schemaless Ecto definition](https://hexdocs.pm/ecto/Ecto.Changeset.html#module-schemaless-changesets)",
+                        "A module implementing `InstructorLite.Instruction` behaviour, Ecto schema or [schemaless Ecto definition](https://hexdocs.pm/ecto/Ecto.Changeset.html#module-schemaless-changesets)",
                       type_spec: quote(do: atom() | Ecto.Changeset.types())
                     ],
                     adapter: [
                       type: :atom,
                       default: OpenAI,
-                      doc: "A module implementing `Instructor.Adapter` behaviour."
+                      doc: "A module implementing `InstructorLite.Adapter` behaviour."
                     ],
                     max_retries: [
                       type: :non_neg_integer,
@@ -35,7 +35,7 @@ defmodule Instructor do
                     json_schema: [
                       type: :map,
                       doc:
-                        "JSON schema to use instead of calling response_model.json_schema/0 callback or generating it at runtime using `Instructor.JSONSchema` module"
+                        "JSON schema to use instead of calling response_model.json_schema/0 callback or generating it at runtime using `InstructorLite.JSONSchema` module"
                     ],
                     adapter_context: [
                       type: :any,
@@ -44,21 +44,21 @@ defmodule Instructor do
                     extra: [
                       type: :any,
                       doc:
-                        "Any arbitrary term for ad-hoc usage. For example, in `c:Instructor.Instruction.validate_changeset/2` callback"
+                        "Any arbitrary term for ad-hoc usage. For example, in `c:InstructorLite.Instruction.validate_changeset/2` callback"
                     ]
                   )
 
   @moduledoc """
-  Main building blocks of Instructor Lite
+  Main building blocks of InstructorLite Lite
 
   ## Key Concepts
 
-  Structured prompting can be quite different depending on the LLM and Instructor Lite does only the bare minimum to abstract this complexity. This means the usage can be quite different depending on the adapter you're using, so make sure to consult adapter documentation to learn the details.
+  Structured prompting can be quite different depending on the LLM and InstructorLite Lite does only the bare minimum to abstract this complexity. This means the usage can be quite different depending on the adapter you're using, so make sure to consult adapter documentation to learn the details.
 
   There are two key arguments used throughout this module. Understanding what they are will make your life a lot easier.
 
   * `params` - is an adapter-specific map, that contain values eventually sent to the LLM. More simply, this is the body that will be posted to the API endpoint. You prompt, model name, optional parameters like temperature all likely belong here.
-  * `opts` - is a list of options that shape behavior of Instructor itself. Options may include things like which schema to cast response to, http client to use, api key, optional headers, http timeout, etc.
+  * `opts` - is a list of options that shape behavior of InstructorLite itself. Options may include things like which schema to cast response to, http client to use, api key, optional headers, http timeout, etc.
 
   ## Shared options
 
@@ -85,14 +85,14 @@ defmodule Instructor do
   ### OpenAI
 
   ```
-  iex> Instructor.instruct(%{
+  iex> InstructorLite.instruct(%{
       messages: [
         %{role: "user", content: "John Doe is fourty two years old"}
       ]
     },
     response_model: %{name: :string, age: :integer},
-    adapter: Instructor.Adapters.OpenAI,
-    adapter_context: [api_key: Application.fetch_env!(:instructor, :openai_key)]
+    adapter: InstructorLite.Adapters.OpenAI,
+    adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :openai_key)]
   )
   {:ok, %{name: "John Doe", age: 42}}
   ```
@@ -100,14 +100,14 @@ defmodule Instructor do
   ### Anthropic
 
   ```
-  iex> Instructor.instruct(%{
+  iex> InstructorLite.instruct(%{
       messages: [
         %{role: "user", content: "John Doe is fourty two years old"}
       ]
     },
     response_model: %{name: :string, age: :integer},
-    adapter: Instructor.Adapters.Anthropic,
-    adapter_context: [api_key: Application.fetch_env!(:instructor, :anthropic_key)]
+    adapter: InstructorLite.Adapters.Anthropic,
+    adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)]
   )
   {:ok, %{name: "John Doe", age: 42}}
   ```
@@ -115,12 +115,12 @@ defmodule Instructor do
   ### Llamacpp
 
   ```
-  iex> Instructor.instruct(%{
+  iex> InstructorLite.instruct(%{
       prompt: "John Doe is fourty two years old"
     },
     response_model: %{name: :string, age: :integer},
-    adapter: Instructor.Adapters.Llamacpp,
-    adapter_context: [url: Application.fetch_env!(:instructor, :llamacpp_url)]
+    adapter: InstructorLite.Adapters.Llamacpp,
+    adapter_context: [url: Application.fetch_env!(:instructor_lite, :llamacpp_url)]
   )
   {:ok, %{name: "John Doe", age: 42}}
   ```
@@ -132,7 +132,7 @@ defmodule Instructor do
   ```
   defmodule Rhymes do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
     
     @primary_key false
     embedded_schema do
@@ -146,14 +146,14 @@ defmodule Instructor do
     end
   end
 
-  Instructor.instruct(%{
+  InstructorLite.instruct(%{
       messages: [
         %{role: "user", content: "Take the last word from the following line and add some rhymes to it\nEven though you broke my heart"}
       ]
     },
     response_model: Rhymes,
     max_retries: 1,
-    adapter_context: [api_key: Application.fetch_env!(:instructor, :openai_key)]
+    adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :openai_key)]
   )
   {:ok, %Rhymes{word: "heart", rhymes: ["part", "start", "dart"]}}
   ```
@@ -231,7 +231,7 @@ defmodule Instructor do
 
   The prompt is added to `params`, so you need to cooperate with the adapter to know what you can provide there.
 
-  The function will call `c:Instructor.Instruction.notes/0` and `c:Instructor.Instruction.json_schema/0` callbacks for `response_model`. Both can be overriden with corresponding options in `opts`.
+  The function will call `c:InstructorLite.Instruction.notes/0` and `c:InstructorLite.Instruction.json_schema/0` callbacks for `response_model`. Both can be overriden with corresponding options in `opts`.
   """
   @spec prepare_prompt(Adapter.params(), opts()) :: Adapter.params()
   def prepare_prompt(params, opts) do
@@ -258,9 +258,9 @@ defmodule Instructor do
   @doc """
   Triage raw LLM response
 
-  Attempts to cast raw response from `c:Instructor.Adapter.send_request/2` and either returns an object or an invalid changeset with new prompt that can be used for a retry.
+  Attempts to cast raw response from `c:InstructorLite.Adapter.send_request/2` and either returns an object or an invalid changeset with new prompt that can be used for a retry.
 
-  This function will call `c:Instructor.Instruction.validate_changeset/2` callback, unless `validate_changeset` option is overridden in `opts`.
+  This function will call `c:InstructorLite.Instruction.validate_changeset/2` callback, unless `validate_changeset` option is overridden in `opts`.
   """
   @spec consume_response(Adapter.response(), Adapter.params(), opts()) ::
           {:ok, Ecto.Schema.t()}
@@ -288,7 +288,7 @@ defmodule Instructor do
           {:ok, Ecto.Changeset.apply_changes(cs)}
 
         changeset ->
-          errors = Instructor.ErrorFormatter.format_errors(changeset)
+          errors = InstructorLite.ErrorFormatter.format_errors(changeset)
           new_params = adapter.retry_prompt(params, resp_params, errors, response, opts)
 
           {:error, changeset, new_params}

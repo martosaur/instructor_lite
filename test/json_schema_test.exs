@@ -1,8 +1,8 @@
 defmodule JSONSchemaTest do
   use ExUnit.Case, async: true
 
-  alias Instructor.JSONSchema
-  alias Instructor.TestSchemas
+  alias InstructorLite.JSONSchema
+  alias InstructorLite.TestSchemas
 
   test "schema" do
     json_schema = JSONSchema.from_ecto_schema(TestSchemas.Child)

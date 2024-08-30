@@ -1,10 +1,10 @@
-defmodule Instructor.Adapters.LlamacppTest do
+defmodule InstructorLite.Adapters.LlamacppTest do
   use ExUnit.Case, async: true
 
   import Mox
 
-  alias Instructor.Adapters.Llamacpp
-  alias Instructor.HTTPClient
+  alias InstructorLite.Adapters.Llamacpp
+  alias InstructorLite.HTTPClient
 
   setup :verify_on_exit!
 

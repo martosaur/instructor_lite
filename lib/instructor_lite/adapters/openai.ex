@@ -1,8 +1,8 @@
-defmodule Instructor.Adapters.OpenAI do
+defmodule InstructorLite.Adapters.OpenAI do
   @moduledoc """
-  Documentation for `Instructor.Adapters.OpenAI`.
+  Documentation for `InstructorLite.Adapters.OpenAI`.
   """
-  @behaviour Instructor.Adapter
+  @behaviour InstructorLite.Adapter
 
   @default_model "gpt-4o-mini"
 
@@ -28,7 +28,7 @@ defmodule Instructor.Adapters.OpenAI do
                          ]
                        )
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def send_request(params, opts) do
     context =
       opts
@@ -45,7 +45,7 @@ defmodule Instructor.Adapters.OpenAI do
     end
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
     mandatory_part = """
     As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
@@ -82,7 +82,7 @@ defmodule Instructor.Adapters.OpenAI do
     |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def retry_prompt(params, resp_params, errors, _response, _opts) do
     do_better = [
       %{role: "assistant", content: Jason.encode!(resp_params)},
@@ -99,7 +99,7 @@ defmodule Instructor.Adapters.OpenAI do
     Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def parse_response(response, _opts) do
     case response do
       %{"choices" => [%{"message" => %{"content" => json, "refusal" => nil}}]} ->

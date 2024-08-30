@@ -1,10 +1,10 @@
-defmodule Instructor.Adapters.OpenAITest do
+defmodule InstructorLite.Adapters.OpenAITest do
   use ExUnit.Case, async: true
 
   import Mox
 
-  alias Instructor.Adapters.OpenAI
-  alias Instructor.HTTPClient
+  alias InstructorLite.Adapters.OpenAI
+  alias InstructorLite.HTTPClient
 
   setup :verify_on_exit!
 

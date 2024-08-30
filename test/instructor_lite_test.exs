@@ -1,7 +1,7 @@
-defmodule InstructorTest do
+defmodule InstructorLiteTest do
   use ExUnit.Case, async: true
 
-  alias Instructor.TestSchemas
+  alias InstructorLite.TestSchemas
 
   import Mox
 
@@ -22,7 +22,7 @@ defmodule InstructorTest do
       end)
 
       assert :ok =
-               Instructor.prepare_prompt(params,
+               InstructorLite.prepare_prompt(params,
                  response_model: %{name: :string, birth_date: :date},
                  adapter: MockAdapter
                )
@@ -39,7 +39,7 @@ defmodule InstructorTest do
       end)
 
       assert :ok =
-               Instructor.prepare_prompt(params,
+               InstructorLite.prepare_prompt(params,
                  response_model: %{name: :string, birth_date: :date},
                  adapter: MockAdapter,
                  json_schema: %{json: :schema}
@@ -61,7 +61,7 @@ defmodule InstructorTest do
       end)
 
       assert {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}} =
-               Instructor.consume_response(:foo, %{},
+               InstructorLite.consume_response(:foo, %{},
                  adapter: MockAdapter,
                  response_model: %{name: :string, birth_date: :date}
                )
@@ -73,7 +73,7 @@ defmodule InstructorTest do
       end)
 
       assert {:error, :foobar} =
-               Instructor.consume_response(:foo, %{},
+               InstructorLite.consume_response(:foo, %{},
                  adapter: MockAdapter,
                  response_model: %{name: :string, birth_date: :date}
                )
@@ -95,7 +95,7 @@ defmodule InstructorTest do
       end)
 
       assert {:error, %Ecto.Changeset{valid?: false}, "new_params"} =
-               Instructor.consume_response(:foo, params,
+               InstructorLite.consume_response(:foo, params,
                  adapter: MockAdapter,
                  response_model: %{name: :string, birth_date: :date}
                )
@@ -117,7 +117,7 @@ defmodule InstructorTest do
       end
 
       assert {:ok, %{name: "foo"}} =
-               Instructor.consume_response(:foo, %{},
+               InstructorLite.consume_response(:foo, %{},
                  adapter: MockAdapter,
                  response_model: %{name: :string},
                  validate_changeset: validate
@@ -127,7 +127,7 @@ defmodule InstructorTest do
     test "calls validate_changeset/2 callback of exported" do
       defmodule ImpossibleGuess do
         use Ecto.Schema
-        use Instructor.Instruction
+        use InstructorLite.Instruction
 
         @primary_key false
         embedded_schema do
@@ -145,7 +145,7 @@ defmodule InstructorTest do
       |> expect(:retry_prompt, fn _, _, _, _, _ -> "new_params" end)
 
       assert {:error, %Ecto.Changeset{errors: [name: {"Wrong!", []}]}, "new_params"} =
-               Instructor.consume_response(:foo, %{},
+               InstructorLite.consume_response(:foo, %{},
                  adapter: MockAdapter,
                  response_model: ImpossibleGuess,
                  extra: "Wrong!"
@@ -181,7 +181,7 @@ defmodule InstructorTest do
       end)
 
       assert {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}} =
-               Instructor.instruct(%{}, options)
+               InstructorLite.instruct(%{}, options)
     end
 
     test "retries on unmatched schema" do
@@ -218,7 +218,7 @@ defmodule InstructorTest do
       end)
 
       assert {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}} =
-               Instructor.instruct(%{}, options)
+               InstructorLite.instruct(%{}, options)
     end
 
     test "out of retries" do
@@ -255,7 +255,7 @@ defmodule InstructorTest do
       end)
       |> expect(:retry_prompt, fn :new_prompt, _resp_params, _errors, _response, _opts -> :foo end)
 
-      assert {:error, %Ecto.Changeset{valid?: false}} = Instructor.instruct(%{}, options)
+      assert {:error, %Ecto.Changeset{valid?: false}} = InstructorLite.instruct(%{}, options)
     end
 
     test "no retries on request error" do
@@ -269,7 +269,7 @@ defmodule InstructorTest do
       |> expect(:initial_prompt, fn _json_schema, _params -> :params end)
       |> expect(:send_request, fn :params, _opts -> {:error, :timeout} end)
 
-      assert {:error, :timeout} = Instructor.instruct(%{}, options)
+      assert {:error, :timeout} = InstructorLite.instruct(%{}, options)
     end
 
     test "no retries on consume error" do
@@ -284,7 +284,7 @@ defmodule InstructorTest do
       |> expect(:send_request, fn :params, _opts -> {:ok, :response_body} end)
       |> expect(:parse_response, fn :response_body, _opts -> {:error, :unexpected_response} end)
 
-      assert {:error, :unexpected_response} = Instructor.instruct(%{}, options)
+      assert {:error, :unexpected_response} = InstructorLite.instruct(%{}, options)
     end
   end
 
@@ -293,7 +293,7 @@ defmodule InstructorTest do
       model = {%{}, %{name: :string}}
       params = %{"name" => "foo"}
 
-      assert %Ecto.Changeset{changes: %{name: "foo"}} = Instructor.cast(model, params)
+      assert %Ecto.Changeset{changes: %{name: "foo"}} = InstructorLite.cast(model, params)
     end
 
     test "actual schema" do
@@ -301,7 +301,7 @@ defmodule InstructorTest do
       params = %{"class" => "spam"}
 
       assert %Ecto.Changeset{changes: %{class: :spam}, valid?: true} =
-               Instructor.cast(model, params)
+               InstructorLite.cast(model, params)
     end
 
     test "embeds" do
@@ -312,7 +312,7 @@ defmodule InstructorTest do
                changes: %{embedded: %Ecto.Changeset{changes: %{name: "Foobar"}}},
                valid?: true
              } =
-               Instructor.cast(model, params)
+               InstructorLite.cast(model, params)
     end
 
     test "associations" do
@@ -328,7 +328,7 @@ defmodule InstructorTest do
                },
                valid?: true
              } =
-               Instructor.cast(model, params)
+               InstructorLite.cast(model, params)
     end
 
     test "recursive" do
@@ -344,7 +344,7 @@ defmodule InstructorTest do
                },
                valid?: true
              } =
-               Instructor.cast(model, params)
+               InstructorLite.cast(model, params)
     end
   end
 end

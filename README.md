@@ -4,13 +4,11 @@ _Structured, Ecto outputs with LLMs_
 
 ---
 
-[![Instructor version](https://img.shields.io/hexpm/v/instructor.svg)](https://hex.pm/packages/instructor)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/instructor/)
-[![Hex Downloads](https://img.shields.io/hexpm/dt/instructor)](https://hex.pm/packages/instructor)
-[![GitHub stars](https://img.shields.io/github/stars/martosaur/instructor_ex.svg)](https://github.com/martosaur/instructor_ex/stargazers)
+[![Instructor version](https://img.shields.io/hexpm/v/instructor_lite.svg)](https://hex.pm/packages/instructor_lite)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/instructor_lite/)
+[![Hex Downloads](https://img.shields.io/hexpm/dt/instructor_lite)](https://hex.pm/packages/instructor_lite)
+[![GitHub stars](https://img.shields.io/github/stars/martosaur/instructor_lite.svg)](https://github.com/martosaur/instructor_lite/stargazers)
 [![Twitter Follow](https://img.shields.io/twitter/follow/distantprovince?style=social)](https://twitter.com/distantprovince)
-
-<!-- Docs -->
 
 Structured prompting for LLMs. Instructor Lite is a fork and spiritual successor to [instructor_ex](https://github.com/thmsmlr/instructor_ex) library, which is the Elixir member of the great [Instructor](https://useinstructor.com/) family.
  

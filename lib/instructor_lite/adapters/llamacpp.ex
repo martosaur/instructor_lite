@@ -1,4 +1,4 @@
-defmodule Instructor.Adapters.Llamacpp do
+defmodule InstructorLite.Adapters.Llamacpp do
   @moduledoc """
   Runs against the llama.cpp server. To be clear this calls the llamacpp specific
   endpoints, not the open-ai compliant ones.
@@ -7,7 +7,7 @@ defmodule Instructor.Adapters.Llamacpp do
     https://github.com/ggerganov/llama.cpp/tree/master/examples/server
   """
 
-  @behaviour Instructor.Adapter
+  @behaviour InstructorLite.Adapter
 
   @send_request_schema NimbleOptions.new!(
                          http_client: [
@@ -27,7 +27,7 @@ defmodule Instructor.Adapters.Llamacpp do
                          ]
                        )
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def send_request(params, opts) do
     context =
       opts
@@ -43,7 +43,7 @@ defmodule Instructor.Adapters.Llamacpp do
     end
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
     mandatory_part = """
     As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
@@ -65,7 +65,7 @@ defmodule Instructor.Adapters.Llamacpp do
     |> Map.put_new(:system_prompt, mandatory_part <> optional_notes)
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def retry_prompt(params, resp_params, errors, _response, _opts) do
     do_better = """
     Your previous response:
@@ -82,7 +82,7 @@ defmodule Instructor.Adapters.Llamacpp do
     end)
   end
 
-  @impl Instructor.Adapter
+  @impl InstructorLite.Adapter
   def parse_response(response, _opts) do
     case response do
       %{"content" => json} ->

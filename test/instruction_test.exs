@@ -1,10 +1,10 @@
-defmodule Instructor.InstructionTest do
+defmodule InstructorLite.InstructionTest do
   use ExUnit.Case, async: true
 
   describe "notes/0" do
     defmodule ShapeFactory do
       use Ecto.Schema
-      use Instructor.Instruction
+      use InstructorLite.Instruction
 
       @notes """
       I guess we doin circles now
@@ -20,7 +20,7 @@ defmodule Instructor.InstructionTest do
 
     test "nil by default" do
       defmodule NoNotes do
-        use Instructor.Instruction
+        use InstructorLite.Instruction
       end
 
       assert NoNotes.notes() == nil
@@ -28,9 +28,9 @@ defmodule Instructor.InstructionTest do
 
     test "overridable" do
       defmodule Foo do
-        use Instructor.Instruction
+        use InstructorLite.Instruction
 
-        @impl Instructor.Instruction
+        @impl InstructorLite.Instruction
         def notes(), do: "Overriden!"
       end
 
@@ -39,12 +39,12 @@ defmodule Instructor.InstructionTest do
   end
 
   describe "json_schema/0" do
-    alias Instructor.JSONSchema
+    alias InstructorLite.JSONSchema
 
     test "defines by default" do
       defmodule Demo do
         use Ecto.Schema
-        use Instructor.Instruction
+        use InstructorLite.Instruction
 
         @primary_key false
         schema "demo" do
@@ -58,7 +58,7 @@ defmodule Instructor.InstructionTest do
     test "overridable" do
       defmodule OverridableJsonSchema do
         use Ecto.Schema
-        use Instructor.Instruction
+        use InstructorLite.Instruction
 
         def json_schema(), do: "I know better"
       end
@@ -69,7 +69,7 @@ defmodule Instructor.InstructionTest do
     test "can use super" do
       defmodule CallSuper do
         use Ecto.Schema
-        use Instructor.Instruction
+        use InstructorLite.Instruction
 
         @primary_key false
         schema "demo" do

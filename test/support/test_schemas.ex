@@ -1,7 +1,7 @@
-defmodule Instructor.TestSchemas do
+defmodule InstructorLite.TestSchemas do
   defmodule SpamPrediction do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
@@ -12,7 +12,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule AllEctoTypes do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
@@ -47,7 +47,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule WithEmbedded do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
@@ -65,7 +65,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule WithChild do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     schema "with_child" do
       has_one(:child, Child)
@@ -74,7 +74,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule WithChildren do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     schema "with_children" do
       has_many(:children, Child)
@@ -83,7 +83,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule LinkedList do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
@@ -91,7 +91,7 @@ defmodule Instructor.TestSchemas do
       embeds_one(:next, LinkedList)
     end
 
-    # @impl Instructor.Instruction
+    # @impl InstructorLite.Instruction
     # def validate_changeset(cs, opts) do
     #   max_items = Keyword.fetch!(opts, :max_list_items)
 
@@ -108,14 +108,14 @@ defmodule Instructor.TestSchemas do
 
   defmodule CoinGuess do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
       field(:guess, Ecto.Enum, values: [:heads, :tails])
     end
 
-    @impl Instructor.Instruction
+    @impl InstructorLite.Instruction
     def validate_changeset(cs, opts) do
       target = Keyword.fetch!(opts, :extra)
 
@@ -128,7 +128,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule UserInfo do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
@@ -139,7 +139,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule Rhymes do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
@@ -150,7 +150,7 @@ defmodule Instructor.TestSchemas do
 
   defmodule SCPObject do
     use Ecto.Schema
-    use Instructor.Instruction
+    use InstructorLite.Instruction
 
     @primary_key false
     embedded_schema do
@@ -159,7 +159,7 @@ defmodule Instructor.TestSchemas do
       field(:containment_procedures, :string)
     end
 
-    @impl Instructor.Instruction
+    @impl InstructorLite.Instruction
     def validate_changeset(changeset, _opts) do
       changeset
     end
