@@ -1,16 +1,22 @@
 defmodule Instructor.Adapter do
   @moduledoc """
-  Behaviour for `Instructor.Adapter`.
+  Behaviour for implementing adapter modules.
+
+  The role of an adapter module is to encapsulate all logic about a particular LLM, which can be quite specific. As a result, most of the details live in adapter modules and main Instructor interface is very broad.
+    
+  > #### Do it! {: .tip}
+  >
+  > While built-in adapters are fairly flexible, users are encouraged to write their own adapters to establish a better control over prompt building, http clients, etc.
   """
   alias Instructor
 
   @typedoc """
-  Map of adapter-specific values, such as messages, prompt, model name, or temperature that are eventually sent to the LLM.
+  Map of adapter-specific values, such as messages, prompt, model name, or temperature, that are typically sent to the LLM in request body.
   """
   @type params :: map()
 
   @typedoc """
-  Content of a successful response.
+  Raw content of a successful response.
   """
   @type response :: any()
 

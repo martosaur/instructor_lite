@@ -106,7 +106,7 @@ defmodule Instructor.TestSchemas do
     # defp do_validate(_, _), do: :ok
   end
 
-  defmodule SecondGuess do
+  defmodule CoinGuess do
     use Ecto.Schema
     use Instructor.Instruction
 

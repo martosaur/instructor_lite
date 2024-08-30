@@ -149,7 +149,7 @@ defmodule Instructor.IntegrationTest do
               }
             ]
           },
-          response_model: TestSchemas.SecondGuess,
+          response_model: TestSchemas.CoinGuess,
           max_retries: 1,
           adapter: OpenAI,
           adapter_context: [
@@ -303,7 +303,7 @@ defmodule Instructor.IntegrationTest do
               }
             ]
           },
-          response_model: TestSchemas.SecondGuess,
+          response_model: TestSchemas.CoinGuess,
           max_retries: 1,
           adapter: Anthropic,
           adapter_context: [
