@@ -45,6 +45,16 @@ defmodule InstructorLite.MixProject do
       extras: [
         "README.md",
         "CHANGELOG.md"
+      ],
+      nest_modules_by_prefix: [InstructorLite.Adapters],
+      groups_for_modules: [
+        Utilities: [InstructorLite.JSONSchema],
+        Adapters: [
+          InstructorLite.Adapter,
+          InstructorLite.Adapters.Anthropic,
+          InstructorLite.Adapters.OpenAI,
+          InstructorLite.Adapters.Llamacpp
+        ]
       ]
     ]
   end
