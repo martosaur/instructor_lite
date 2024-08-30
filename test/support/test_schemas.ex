@@ -137,6 +137,17 @@ defmodule Instructor.TestSchemas do
     end
   end
 
+  defmodule Rhymes do
+    use Ecto.Schema
+    use Instructor.Instruction
+
+    @primary_key false
+    embedded_schema do
+      field(:word, :string)
+      field(:rhyms, {:array, :string})
+    end
+  end
+
   defmodule SCPObject do
     use Ecto.Schema
     use Instructor.Instruction

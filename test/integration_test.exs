@@ -9,7 +9,7 @@ defmodule Instructor.IntegrationTest do
   describe "OpenAI" do
     test "schemaless" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -31,7 +31,7 @@ defmodule Instructor.IntegrationTest do
 
     test "basic ecto schema" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -56,7 +56,7 @@ defmodule Instructor.IntegrationTest do
 
     test "with embedded" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -80,7 +80,7 @@ defmodule Instructor.IntegrationTest do
 
     test "all ecto types" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -139,7 +139,7 @@ defmodule Instructor.IntegrationTest do
 
     test "with validate_changeset" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             model: "gpt-4o-mini",
             messages: [
@@ -168,7 +168,7 @@ defmodule Instructor.IntegrationTest do
       schema = %{name: :string, birth_date: :date}
 
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
@@ -189,7 +189,7 @@ defmodule Instructor.IntegrationTest do
 
     test "basic ecto schema" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             messages: [
               %{
@@ -213,7 +213,7 @@ defmodule Instructor.IntegrationTest do
 
     test "with embedded" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             messages: [
               %{
@@ -236,7 +236,7 @@ defmodule Instructor.IntegrationTest do
 
     test "all ecto types" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             messages: [
               %{
@@ -294,7 +294,7 @@ defmodule Instructor.IntegrationTest do
 
     test "with validate_changeset" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             messages: [
               %{
@@ -320,7 +320,7 @@ defmodule Instructor.IntegrationTest do
   describe "Llamacpp" do
     test "schemaless" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{prompt: "Who was the first president of the USA?"},
           response_model: %{name: :string, number_of_terms: :integer},
           adapter: Llamacpp,
@@ -337,7 +337,7 @@ defmodule Instructor.IntegrationTest do
 
     test "basic ecto schema" do
       result =
-        Instructor.chat_completion(
+        Instructor.instruct(
           %{
             prompt:
               "Classify the following text: Hello, I am a Nigerian prince and I would like to give you $1,000,000."

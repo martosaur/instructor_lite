@@ -52,14 +52,14 @@ defmodule UserInfo do
 end
 ```
 
-Now let's use `Instructor.completion/2` to fill the schema from unstructured text (with typos!):
+Now let's use `Instructor.instruct/2` to fill the schema from unstructured text (with typos!):
 
 <!-- tabs-open -->
 
 ### OpenAI
 
 ```elixir
-iex> Instructor.chat_completion(%{
+iex> Instructor.instruct(%{
     messages: [
       %{role: "user", content: "John Doe is fourty two years old"}
     ]
@@ -73,7 +73,7 @@ iex> Instructor.chat_completion(%{
 ### Anthropic
 
 ```elixir
-iex> Instructor.chat_completion(%{
+iex> Instructor.instruct(%{
     messages: [
       %{role: "user", content: "John Doe is fourty two years old"}
     ]
@@ -88,7 +88,7 @@ iex> Instructor.chat_completion(%{
 ### Llamacpp
 
 ```elixir
-iex> Instructor.chat_completion(%{
+iex> Instructor.instruct(%{
     prompt: "John Doe is fourty two years old"
   },
   response_model: UserInfo,

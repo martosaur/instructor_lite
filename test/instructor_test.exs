@@ -153,7 +153,7 @@ defmodule InstructorTest do
     end
   end
 
-  describe "chat_completion/2" do
+  describe "instruct/2" do
     test "happy path" do
       params = %{
         messages: [%{role: "system", content: "prompt"}]
@@ -181,7 +181,7 @@ defmodule InstructorTest do
       end)
 
       assert {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}} =
-               Instructor.chat_completion(%{}, options)
+               Instructor.instruct(%{}, options)
     end
 
     test "retries on unmatched schema" do
@@ -218,7 +218,7 @@ defmodule InstructorTest do
       end)
 
       assert {:ok, %{name: "George Washington", birth_date: ~D[1732-02-22]}} =
-               Instructor.chat_completion(%{}, options)
+               Instructor.instruct(%{}, options)
     end
 
     test "out of retries" do
@@ -255,7 +255,7 @@ defmodule InstructorTest do
       end)
       |> expect(:retry_prompt, fn :new_prompt, _resp_params, _errors, _response, _opts -> :foo end)
 
-      assert {:error, %Ecto.Changeset{valid?: false}} = Instructor.chat_completion(%{}, options)
+      assert {:error, %Ecto.Changeset{valid?: false}} = Instructor.instruct(%{}, options)
     end
 
     test "no retries on request error" do
@@ -269,7 +269,7 @@ defmodule InstructorTest do
       |> expect(:initial_prompt, fn _json_schema, _params -> :params end)
       |> expect(:send_request, fn :params, _opts -> {:error, :timeout} end)
 
-      assert {:error, :timeout} = Instructor.chat_completion(%{}, options)
+      assert {:error, :timeout} = Instructor.instruct(%{}, options)
     end
 
     test "no retries on consume error" do
@@ -284,7 +284,7 @@ defmodule InstructorTest do
       |> expect(:send_request, fn :params, _opts -> {:ok, :response_body} end)
       |> expect(:parse_response, fn :response_body, _opts -> {:error, :unexpected_response} end)
 
-      assert {:error, :unexpected_response} = Instructor.chat_completion(%{}, options)
+      assert {:error, :unexpected_response} = Instructor.instruct(%{}, options)
     end
   end
 
