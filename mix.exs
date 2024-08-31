@@ -44,7 +44,8 @@ defmodule InstructorLite.MixProject do
       source_ref: "v#{@version}",
       extras: [
         "README.md",
-        "CHANGELOG.md"
+        "CHANGELOG.md",
+        "pages/philosophy.md"
       ],
       nest_modules_by_prefix: [InstructorLite.Adapters],
       groups_for_modules: [
@@ -55,6 +56,9 @@ defmodule InstructorLite.MixProject do
           InstructorLite.Adapters.OpenAI,
           InstructorLite.Adapters.Llamacpp
         ]
+      ],
+      groups_for_extras: [
+        Changelog: ["CHANGELOG.md"]
       ]
     ]
   end

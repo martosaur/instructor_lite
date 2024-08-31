@@ -55,7 +55,7 @@ Chat with GPT, Chat with your PDF, Chat with your AI Girlfriend.
 
 This makes sense, when you think about it.
 We're really good at creating strings in Software 1.0 from structured data, but we're terrible at creating structured data from strings.
-Nor are we any good any good at interpreting the semantic meaning of strings.
+Nor are we any good at interpreting the semantic meaning of strings.
 
 Therefore, it only makes sense to design experiences where we present them to the user for interpretation.
 Alas, our ubiquitous chatbot interface.
@@ -73,7 +73,7 @@ That'd give us the all our domains and ranges covered,
 With such a capability, you would have full bidirectional interoperability between software 1.0 and software 2.0. 
 That's what Instructor provides. 
 
-## cast_all\2, It's just Ecto baby
+## It's just Ecto baby
 
 Now to do this we need to give the LLM a schema that it has to conform to in its output text. 
 If we can guarantee that it outputs JSON that matches this schema, we can treat it as any other user data we're used to in Elixir.
@@ -88,7 +88,7 @@ defmodule Recipe do
   use Ecto.Schema
 
   @doc """
-    Our AI generated delicious recipe.
+  Our AI generated delicious recipe.
   """
   @primary_key false
   embedded_schema do 
@@ -105,20 +105,21 @@ end
 ```
 
 From this instructor takes your ecto schema, converts it into a JSON schema, and passes it on to the LLM.
-It uses clever techniques like function calling and BNF grammar sampling to ensure that we get back a result that is exactly matching our Ecto schema.
+It uses tools provided by LLMs like function calling and structured output to ensure that we get back a result that is exactly matching our Ecto schema.
 At which point it's all just Ecto code.
 We cast the fields, we do the validations, and we return the result back to you.
 
 ```elixir
-Instructor.chat_completion(
-  model: "gpt-3.5-turbo",
+InstructorLite.instruct(%{
+    messages: [
+      %{ role: "user", content: "Give me a recipe for a banana smoothie" }
+    ]
+  },
   response_model: Recipe,
-  messages: [
-    %{ role: "user", content: "Give me a recipe for a banana smoothie" }
-  ]
+  adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :openai_key)]
 )
 
-# => {:ok, %Recipe{title: "Banana smoothie", cook_time: 15, steps: [...]}
+# => {:ok, %Recipe{title: "Banana smoothie", cook_time: 15, steps: [...], ingredients: [...]}
 ```
 
 Instructor makes Ecto is our interchange format between Software 1.0 and 2.0.
@@ -138,8 +139,3 @@ A good heuristic to start with is, "wherever I use Ecto, I can use Instructor."
 ```
 
 There is a 40Gb LLM file sitting on Huggingface that encodes the entirety of human knowledge, you now have a query interface for it.
-
-## Where to go from here?
-
-First, go check out the [Introduction to Instructor Tutorial](#) where we go over the user guide of how to get up and running with instructor.
-Then, checkout the [cookbooks](#) to see various techniques of how to best leverage instructor in common usecases.

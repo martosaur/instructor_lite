@@ -10,23 +10,23 @@ _Structured, Ecto outputs with LLMs_
 [![GitHub stars](https://img.shields.io/github/stars/martosaur/instructor_lite.svg)](https://github.com/martosaur/instructor_lite/stargazers)
 [![Twitter Follow](https://img.shields.io/twitter/follow/distantprovince?style=social)](https://twitter.com/distantprovince)
 
-Structured prompting for LLMs. Instructor Lite is a fork and spiritual successor to [instructor_ex](https://github.com/thmsmlr/instructor_ex) library, which is the Elixir member of the great [Instructor](https://useinstructor.com/) family.
+Structured prompting for LLMs. InstructorLite is a fork and spiritual successor to [instructor_ex](https://github.com/thmsmlr/instructor_ex) library, which is the Elixir member of the great [Instructor](https://useinstructor.com/) family.
  
 The Instructor is useful for coaxing an LLM to return JSON that maps to an Ecto schema that you provide, rather than the default unstructured text output. If you define your own validation logic, Instructor can automatically retry prompts when validation fails (returning natural language error messages to the LLM, to guide it when making corrections).
 
 
 ## Why Lite
 
-Instructor Lite is designed to be:
+InstructorLite is designed to be:
 1. **Lean**. It does so little it makes you question if you should just write your own version.
 2. **Composable**. Almost everything it does can be overridden or extended.
 3. **Magic-free**. It doesn't hide complexity behind one line function calls, but does its best to provide you with enough information to understand what's going on.
 
-Instructor Lite comes with 3 adapters: [OpenAI](https://openai.com/api/), [Anthropic](https://www.anthropic.com/) and [Llamacpp](https://github.com/ggerganov/llama.cpp). 
+InstructorLite comes with 3 adapters: [OpenAI](https://openai.com/api/), [Anthropic](https://www.anthropic.com/) and [Llamacpp](https://github.com/ggerganov/llama.cpp). 
 
 ## Features
 
-Instructor Lite can be boiled down to these features:
+InstructorLite can be boiled down to these features:
 1. It provides a very simple function for generating JSON-schema from Ecto schema.
 2. It facilitates generating prompts, calling LLMs, casting and validating responses, including retrying prompts when validation fails.
 3. It holds knowledge of major LLM providers' API interfaces with adapters.
@@ -40,7 +40,7 @@ Define an instruction, which is a normal Ecto schema with an extra `use Instruct
 ```elixir
 defmodule UserInfo do
   use Ecto.Schema
-  use Instructor.Instruction
+  use InstructorLite.Instruction
   
   @primary_key false
   embedded_schema do
@@ -50,20 +50,20 @@ defmodule UserInfo do
 end
 ```
 
-Now let's use `Instructor.instruct/2` to fill the schema from unstructured text (with typos!):
+Now let's use `InstructorLite.instruct/2` to fill the schema from unstructured text:
 
 <!-- tabs-open -->
 
 ### OpenAI
 
 ```elixir
-iex> Instructor.instruct(%{
+iex> InstructorLite.instruct(%{
     messages: [
       %{role: "user", content: "John Doe is fourty two years old"}
     ]
   },
   response_model: UserInfo,
-  adapter_context: [api_key: Application.fetch_env!(:instructor, :openai_key)]
+  adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :openai_key)]
 )
 {:ok, %UserInfo{name: "John Doe", age: 42}}
 ```
@@ -71,14 +71,14 @@ iex> Instructor.instruct(%{
 ### Anthropic
 
 ```elixir
-iex> Instructor.instruct(%{
+iex> InstructorLite.instruct(%{
     messages: [
       %{role: "user", content: "John Doe is fourty two years old"}
     ]
   },
   response_model: UserInfo,
-  adapter: Instructor.Adapters.Anthropic,
-  adapter_context: [api_key: Application.fetch_env!(:instructor, :anthropic_key)]
+  adapter: InstructorLite.Adapters.Anthropic,
+  adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)]
 )
 {:ok, %UserInfo{name: "John Doe", age: 42}}
 ```
@@ -86,12 +86,12 @@ iex> Instructor.instruct(%{
 ### Llamacpp
 
 ```elixir
-iex> Instructor.instruct(%{
+iex> InstructorLite.instruct(%{
     prompt: "John Doe is fourty two years old"
   },
   response_model: UserInfo,
-  adapter: Instructor.Adapters.Llamacpp,
-  adapter_context: [url: Application.fetch_env!(:instructor, :llamacpp_url)]
+  adapter: InstructorLite.Adapters.Llamacpp,
+  adapter_context: [url: Application.fetch_env!(:instructor_lite, :llamacpp_url)]
 )
 {:ok, %UserInfo{name: "John Doe", age: 42}}
 ```
@@ -100,7 +100,7 @@ iex> Instructor.instruct(%{
 
 ## Configuration
 
-Instructor Lite _does not_ access the application environment for configuration options like adapter or api key. Instead, they're passed as options when needed. Note that different adapters may require different options, so make sure to check their documentation. 
+InstructorLite _does not_ access the application environment for configuration options like adapter or api key. Instead, they're passed as options when needed. Note that different adapters may require different options, so make sure to check their documentation. 
 
 
 ## Installation
@@ -110,7 +110,7 @@ In your mix.exs,
 ```elixir
 def deps do
   [
-    {:instructor, "~> 0.1.0"}
+    {:instructor_lite, "~> 0.1.0"}
   ]
 end
 ```
