@@ -1,12 +1,18 @@
 defmodule InstructorLite.JSONSchema do
+  @moduledoc """
+  Helper module to generate JSON Schema based on Ecto schema.
+
+  JSON Schema comes in many flavors and different LLMs have different limitations. Currently, this module aims to implement a schema suitable for [OpenAI structured outputs](https://platform.openai.com/docs/guides/structured-outputs/supported-schemas). This type of JSON schema may not be optimal or compatible with other models. Therefore, it's recommended to use this module as a starting point to generate a schema during development. You can then manually refine the schema and either implement it in the `c:InstructorLite.Instruction.json_schema/0` callback or pass it as an option.
+
+  > #### Warning {: .warning}
+  >
+  > For the reasons described above, neither backward compatibility nor compatibility with all built-in adapters are goals of this module.
+  """
   defguardp is_ecto_schema(mod) when is_atom(mod)
   defguardp is_ecto_types(types) when is_map(types)
 
   @doc """
-    Generates a JSON Schema from an Ecto schema.
-
-    Note: This will output a correct JSON Schema for the given Ecto schema, but
-    it will not necessarily be optimal, nor support all Ecto types.
+  Generates a JSON Schema from an Ecto schema.
   """
   def from_ecto_schema(ecto_schema) do
     defs =

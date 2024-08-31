@@ -1,10 +1,25 @@
 defmodule InstructorLite.Adapters.Llamacpp do
   @moduledoc """
-  Runs against the llama.cpp server. To be clear this calls the llamacpp specific
-  endpoints, not the open-ai compliant ones.
+  [LLaMA.cpp HTTP Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) adapter.
 
-  You can read more about it here:
-    https://github.com/ggerganov/llama.cpp/tree/master/examples/server
+  This adapter is implemented using llama-specific [completion](https://github.com/ggerganov/llama.cpp/tree/master/examples/server#post-completion-given-a-prompt-it-returns-the-predicted-completion) endpoint.
+
+  ## Params
+  `params` argument should be shaped as a [completion request body](https://github.com/ggerganov/llama.cpp/tree/master/examples/server#post-completion-given-a-prompt-it-returns-the-predicted-completion)
+
+  ## Example
+
+  ```
+  InstructorLite.instruct(%{
+      prompt: "John is 25yo",
+      temperature: 0.8
+    },
+    response_model: %{name: :string, age: :integer},
+    adapter: InstructorLite.Adapters.Llamacpp,
+    adapter_context: [url: "http://localhost:8000/completion"]
+  )
+  {:ok, %{name: "John", age: 25}}
+  ```
   """
 
   @behaviour InstructorLite.Adapter
@@ -17,7 +32,8 @@ defmodule InstructorLite.Adapters.Llamacpp do
                          ],
                          http_options: [
                            type: :keyword_list,
-                           default: [receive_timeout: 60_000]
+                           default: [receive_timeout: 60_000],
+                           doc: "Options passed to `http_client.post/2`"
                          ],
                          url: [
                            type: :string,
@@ -27,6 +43,13 @@ defmodule InstructorLite.Adapters.Llamacpp do
                          ]
                        )
 
+  @doc """
+  Make request to llamacpp HTTP server.
+
+  ## Options
+
+  #{NimbleOptions.docs(@send_request_schema)}
+  """
   @impl InstructorLite.Adapter
   def send_request(params, opts) do
     context =
@@ -43,6 +66,11 @@ defmodule InstructorLite.Adapters.Llamacpp do
     end
   end
 
+  @doc """
+  Updates `params` with prompt based on `json_schema` and `notes`.
+
+  It uses `json_schema` and `system_prompt` request parameters.
+  """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
     mandatory_part = """
@@ -65,6 +93,9 @@ defmodule InstructorLite.Adapters.Llamacpp do
     |> Map.put_new(:system_prompt, mandatory_part <> optional_notes)
   end
 
+  @doc """
+  Updates `params` with prompt for retrying a request.
+  """
   @impl InstructorLite.Adapter
   def retry_prompt(params, resp_params, errors, _response, _opts) do
     do_better = """
@@ -82,6 +113,13 @@ defmodule InstructorLite.Adapters.Llamacpp do
     end)
   end
 
+  @doc """
+  Parse API response.
+
+  Can return:
+    * `{:ok, parsed_json}` on success.
+    * `{:error, :unexpected_response, response}` if response is of unexpected shape.
+  """
   @impl InstructorLite.Adapter
   def parse_response(response, _opts) do
     case response do

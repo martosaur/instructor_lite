@@ -1,6 +1,26 @@
 defmodule InstructorLite.Adapters.OpenAI do
   @moduledoc """
-  Documentation for `InstructorLite.Adapters.OpenAI`.
+  [OpenAI](https://platform.openai.com/docs/overview) adapter.
+
+  This adapter is implemented using chat completions endpoint and [structured outputs](https://platform.openai.com/docs/guides/structured-outputs/structured-outputs).
+
+  ## Params
+  `params` argument should be shaped as a [Create chat completion request body](https://platform.openai.com/docs/api-reference/chat/create).
+   
+  ## Example
+
+  ```
+  InstructorLite.instruct(%{
+      messages: [%{role: "user", content: "John is 25yo"}],
+      model: "gpt-4o-mini",
+      service_tier: "default"
+    },
+    response_model: %{name: :string, age: :integer},
+    adapter: InstructorLite.Adapters.OpenAI,
+    adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :openai_key)]
+  )
+  {:ok, %{name: "John", age: 25}}
+  ```
   """
   @behaviour InstructorLite.Adapter
 
@@ -19,7 +39,8 @@ defmodule InstructorLite.Adapters.OpenAI do
                          ],
                          http_options: [
                            type: :keyword_list,
-                           default: [receive_timeout: 60_000]
+                           default: [receive_timeout: 60_000],
+                           doc: "Options passed to `http_client.post/2`"
                          ],
                          url: [
                            type: :string,
@@ -28,6 +49,13 @@ defmodule InstructorLite.Adapters.OpenAI do
                          ]
                        )
 
+  @doc """
+  Make request to OpenAI API.
+    
+  ## Options
+
+  #{NimbleOptions.docs(@send_request_schema)}
+  """
   @impl InstructorLite.Adapter
   def send_request(params, opts) do
     context =
@@ -45,6 +73,11 @@ defmodule InstructorLite.Adapters.OpenAI do
     end
   end
 
+  @doc """
+  Updates `params` with prompt based on `json_schema` and `notes`.
+
+  Also specifies default `#{@default_model}` model if not provided by a user. 
+  """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
     mandatory_part = """
@@ -82,6 +115,9 @@ defmodule InstructorLite.Adapters.OpenAI do
     |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)
   end
 
+  @doc """
+  Updates `params` with prompt for retrying a request.
+  """
   @impl InstructorLite.Adapter
   def retry_prompt(params, resp_params, errors, _response, _opts) do
     do_better = [
@@ -99,6 +135,14 @@ defmodule InstructorLite.Adapters.OpenAI do
     Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
   end
 
+  @doc """
+  Parse chat completion endpoint response.
+
+  Can return:
+    * `{:ok, parsed_json}` on success.
+    * `{:error, :refusal, reason}` on [refusal](https://platform.openai.com/docs/guides/structured-outputs/refusals).
+    * `{:error, :unexpected_response, response}` if response is of unexpected shape.
+  """
   @impl InstructorLite.Adapter
   def parse_response(response, _opts) do
     case response do

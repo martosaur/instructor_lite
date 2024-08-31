@@ -49,11 +49,11 @@ defmodule InstructorLite do
                   )
 
   @moduledoc """
-  Main building blocks of InstructorLite Lite
+  Main building blocks of InstructorLite.
 
   ## Key Concepts
 
-  Structured prompting can be quite different depending on the LLM and InstructorLite Lite does only the bare minimum to abstract this complexity. This means the usage can be quite different depending on the adapter you're using, so make sure to consult adapter documentation to learn the details.
+  Structured prompting can be quite different depending on the LLM and InstructorLite does only the bare minimum to abstract this complexity. This means the usage can be quite different depending on the adapter you're using, so make sure to consult adapter documentation to learn the details.
 
   There are two key arguments used throughout this module. Understanding what they are will make your life a lot easier.
 
