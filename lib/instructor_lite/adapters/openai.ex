@@ -34,7 +34,6 @@ defmodule InstructorLite.Adapters.OpenAI do
                          ],
                          http_client: [
                            type: :atom,
-                           default: Req,
                            doc: "Any module that follows `Req.post/2` interface"
                          ],
                          http_options: [

@@ -105,7 +105,7 @@ InstructorLite _does not_ access the application environment for configuration o
 
 ## Installation
 
-In your mix.exs,
+In your mix.exs, add `:instructor_lite` to your list of dependencies:
 
 ```elixir
 def deps do
@@ -114,3 +114,14 @@ def deps do
   ]
 end
 ```
+
+Optionally, include `m:Req` HTTP client as it's used by default:
+
+```elixir
+def deps do
+  [
+    {:req, "~> 0.5 or ~> 1.0"}
+  ]
+end
+```
+
