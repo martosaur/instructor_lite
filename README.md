@@ -1,8 +1,4 @@
-# Instructor Lite
-
-_Structured, Ecto outputs with LLMs_
-
----
+# InstructorLite
 
 [![Instructor version](https://img.shields.io/hexpm/v/instructor_lite.svg)](https://hex.pm/packages/instructor_lite)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/instructor_lite/)
