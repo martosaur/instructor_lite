@@ -1,0 +1,151 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Text Classification
+
+```elixir
+Mix.install(
+  [
+    {:instructor_lite, path: Path.expand("../../", __DIR__)},
+    {:req, "~> 0.5"}
+  ]
+)
+```
+
+## Motivation
+
+Text classification is a common task in NLP and broadly applicable across software. Whether it be spam detection, or support ticket categorization, NLP is at the core. Historically, this required training custom, bespoke models that required collecting thousands of pre-labeled examples. With LLMs a lot of this knowledge is already encoded into the model. With proper instruction and guiding the output to a known set of classifications using GPT you can be up and running with a text classification model in no time.
+
+Hell, you can even use instructor to help generate the training set to train your own more efficient model. But let's not get ahead of ourselves, there's more on that later in the tutorials.
+
+## Setup
+
+In order to run code in this notebook, you need to add your OpenAI API key as an `OPENAI_KEY` Livebook secret. It will then be accessible through an environmental variable.
+
+```elixir
+secret_key = System.fetch_env!("LB_OPENAI_KEY")
+:ok
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Binary Text Classification
+
+Spam detection is a classic example of binary text classification. It's as simple as returning a true / false of whether an example is in the class. This is pretty trivial to implement in instructor.
+
+````elixir
+defmodule SpamPrediction do
+  use Ecto.Schema
+  use InstructorLite.Instruction
+
+  @notes """
+  ## Field Descriptions:
+  - class: Whether or not the email is spam.
+  - reason: A short, less than 10 word rationalization for the classification.
+  - score: A confidence score between 0.0 and 1.0 for the classification.
+  """
+  @primary_key false
+  embedded_schema do
+    field(:class, Ecto.Enum, values: [:spam, :not_spam])
+    field(:reason, :string)
+    field(:score, :float)
+  end
+
+  @impl true
+  def validate_changeset(changeset, _opts) do
+    changeset
+    |> Ecto.Changeset.validate_number(:score,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 1.0
+    )
+  end
+end
+
+is_spam? = fn text ->
+  InstructorLite.instruct(%{
+      model: "gpt-4o-mini",
+      messages: [
+        %{
+          role: "user",
+          content: """
+          Your purpose is to classify customer support emails as either spam or not.
+          This is for a clothing retail business.
+          They sell all types of clothing.
+  
+          Classify the following email: 
+          ```
+          #{text}
+          ```
+          """
+        }
+      ]
+    },
+    response_model: SpamPrediction,
+    max_retries: 1,
+    adapter_context: [api_key: secret_key]
+  )
+end
+
+is_spam?.("Hello I am a Nigerian prince and I would like to send you money")
+````
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, %SpamPrediction{class: :spam, reason: "Common spam trope about money", score: 0.95}}
+```
+
+We don't have to stop just at a boolean inclusion, we can also easily extend this idea to multiple categories or classes that we can classify the text into. In this example, let's consider classifying support emails. We want to know whether it's a `general_inquiry`, `billing_issue`, or a `technical_issue` perhaps it rightly fits in multiple classes. This can be useful if we want to cc' specialized support agents when intersecting customer issues occur
+
+We can leverage `Ecto.Enum` to define a schema that restricts the LLM output to be a list of those values. We can also provide a `@notes` description to help guide the LLM with the semantic understanding of what these classifications ought to represent.
+
+```elixir
+defmodule EmailClassifications do
+  use Ecto.Schema
+  use InstructorLite.Instruction
+
+  @notes """
+  A classification of a customer support email.
+
+  technical_issue - whether the user is having trouble accessing their account.
+  billing_issue - whether the customer is having trouble managing their billing or credit card
+  general_inquiry - all other issues
+  """
+  @primary_key false
+  embedded_schema do
+    field(:tags, {:array, Ecto.Enum},
+      values: [:general_inquiry, :billing_issue, :technical_issue]
+    )
+  end
+end
+
+classify_email = fn text ->
+  {:ok, %{tags: result}} =
+    InstructorLite.instruct(%{
+        messages: [
+          %{
+            role: "user",
+            content: "Classify the following text: #{text}"
+          }
+        ]
+      },
+      response_model: EmailClassifications,
+      adapter_context: [api_key: secret_key]
+    )
+
+  result
+end
+
+classify_email.("My account is locked and I can't access my billing info.")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[:technical_issue, :billing_issue]
+```
+
+<!-- livebook:{"offset":4685,"stamp":{"token":"XCP.piCFFvM4UdfB4LjkjwMf2_8-2xjr87WuqUlbcBvMMI-bUvGSQ-Tx5Ulp88x9jlZhxy6TIigBop8tk2OVP3E_vm7nFV-QYXxQHAO5ydrbjVczreUnxQ","version":2}} -->

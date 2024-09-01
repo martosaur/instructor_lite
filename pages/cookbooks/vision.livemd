@@ -1,0 +1,87 @@
+<!-- livebook:{"file_entries":[{"name":"shopify-screenshot.png","type":"attachment"}],"persist_outputs":true} -->
+
+# Computer Vision - Extracting Data from Images
+
+```elixir
+Mix.install(
+  [
+    {:instructor_lite, path: Path.expand("../../", __DIR__)},
+    {:req, "~> 0.5"},
+    {:kino, "~> 0.12.3"}
+  ]
+)
+```
+
+## Motivation
+
+In recent months, the latest AI researcher labs have turned LLMs into multimodal models. What this means is that no longer do they just interpret text, but they can also interpret images. One example of this provided by Anthropic is the Clause 3.5 Sonnet model. With no extra work, you can now provide images into your prompts with instructor and still do the normal structured extractions that you're used to.
+
+In the following example, we will extract product details from a screenshot of a Shopify store.
+
+## Setup
+
+In order to run code in this notebook, you need to add your Anthropic API key as an `OPENAI_KEY` Livebook secret. It will then be accessible through an environmental variable.
+
+```elixir
+secret_key = System.fetch_env!("LB_ANTHROPIC_KEY")
+:ok
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Example
+
+![](files/shopify-screenshot.png)
+
+```elixir
+image = Kino.FS.file_path("shopify-screenshot.png") |> File.read!()
+base64_image = Base.encode64(image)
+
+defmodule Product do
+  use Ecto.Schema
+
+  @primary_key false
+  embedded_schema do
+    field(:name, :string)
+    field(:price, :decimal)
+    field(:currency, Ecto.Enum, values: [:usd, :gbp, :eur, :cny])
+    field(:color, :string)
+  end
+end
+
+{:ok, result} =
+  InstructorLite.instruct(%{
+      messages: [
+        %{
+          role: "user",
+          content: [
+            %{type: "text", text: "What is the product details of the following image?"},
+            %{type: "image", source: %{data: base64_image, type: "base64", media_type: "image/png"}}
+          ]
+        }
+      ]
+    },
+    adapter: InstructorLite.Adapters.Anthropic,
+    response_model: Product,
+    adapter_context: [api_key: secret_key]
+  )
+
+result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Product{
+  name: "Thomas Wooden Railway Thomas The Tank Engine",
+  price: Decimal.new("33.0"),
+  currency: :usd,
+  color: "blue"
+}
+```
+
+<!-- livebook:{"offset":2166,"stamp":{"token":"XCP.VFIWnxLfdgy2x6C34CJrkmOCjlrQDs8J5R9CYnv-v6v2BLmiGtowOqI5wULoyB5eEn27o1QWQg2KsPu3_FGBRzNttsvwhcpnSWDN2Ie_ZShEOsRVdxKLtHCWzmo51J9Og2Rmee5NYA","version":2}} -->

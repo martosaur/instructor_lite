@@ -13,7 +13,8 @@ defmodule InstructorLite.MixProject do
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       docs: docs(),
-      package: package()
+      package: package(),
+      aliases: aliases()
     ]
   end
 
@@ -45,22 +46,34 @@ defmodule InstructorLite.MixProject do
       extras: [
         "README.md",
         "CHANGELOG.md",
-        "pages/philosophy.md"
+        "pages/philosophy.md",
+        "pages/cookbooks/text-classification.livemd",
+        "pages/cookbooks/vision.livemd"
       ],
       nest_modules_by_prefix: [InstructorLite.Adapters],
       groups_for_modules: [
         Utilities: [InstructorLite.JSONSchema],
+        Behaviours: [InstructorLite.Instruction, InstructorLite.Adapter],
         Adapters: [
-          InstructorLite.Adapter,
           InstructorLite.Adapters.Anthropic,
           InstructorLite.Adapters.OpenAI,
           InstructorLite.Adapters.Llamacpp
         ]
       ],
       groups_for_extras: [
-        Changelog: ["CHANGELOG.md"]
+        Changelog: ["CHANGELOG.md"],
+        Cookbooks: Path.wildcard("pages/cookbooks/*.livemd")
       ]
     ]
+  end
+  
+  defp aliases do
+    [docs: ["docs", &copy_images/1]]
+  end
+
+  defp copy_images(_) do
+    File.mkdir_p("doc/files/")
+    File.cp!("pages/cookbooks/files/shopify-screenshot.png", "doc/files/shopify-screenshot.png")
   end
 
   defp deps do
