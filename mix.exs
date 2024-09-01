@@ -48,7 +48,8 @@ defmodule InstructorLite.MixProject do
         "CHANGELOG.md",
         "pages/philosophy.md",
         "pages/cookbooks/text-classification.livemd",
-        "pages/cookbooks/vision.livemd"
+        "pages/cookbooks/vision.livemd",
+        "pages/cookbooks/text-to-dataframes.livemd"
       ],
       nest_modules_by_prefix: [InstructorLite.Adapters],
       groups_for_modules: [
@@ -66,7 +67,7 @@ defmodule InstructorLite.MixProject do
       ]
     ]
   end
-  
+
   defp aliases do
     [docs: ["docs", &copy_images/1]]
   end
