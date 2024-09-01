@@ -1,7 +1,6 @@
 name: CI
 
 on:
-  workflow_dispatch:
   pull_request:
   push:
     branches:
@@ -9,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       MIX_ENV: test
     strategy:
@@ -17,8 +16,11 @@ jobs:
       matrix:
         include:
           - pair:
-              elixir: "1.16"
-              otp: "26.2"
+              elixir: "1.13"
+              otp: "24.3.4.17"
+          - pair:
+              elixir: "1.17"
+              otp: "27.0.1"
             lint: lint
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +29,7 @@ jobs:
         with:
           otp-version: ${{matrix.pair.otp}}
           elixir-version: ${{matrix.pair.elixir}}
+          version-type: strict
 
       - uses: actions/cache@v4
         with:
@@ -34,8 +37,6 @@ jobs:
             deps
             _build
           key: ${{ runner.os }}-mix-${{matrix.pair.elixir}}-${{matrix.pair.otp}}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-mix-
 
       - run: mix deps.get --check-locked
 
@@ -46,8 +47,8 @@ jobs:
         if: ${{ matrix.lint }}
 
       - run: mix deps.compile
-
-      - run: mix compile --warnings-as-errors
+      
+      - run: mix compile --no-optional-deps --warnings-as-errors
         if: ${{ matrix.lint }}
 
       - run: mix test

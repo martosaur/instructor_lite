@@ -8,7 +8,6 @@ _Structured, Ecto outputs with LLMs_
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/instructor_lite/)
 [![Hex Downloads](https://img.shields.io/hexpm/dt/instructor_lite)](https://hex.pm/packages/instructor_lite)
 [![GitHub stars](https://img.shields.io/github/stars/martosaur/instructor_lite.svg)](https://github.com/martosaur/instructor_lite/stargazers)
-[![Twitter Follow](https://img.shields.io/twitter/follow/distantprovince?style=social)](https://twitter.com/distantprovince)
 
 Structured prompting for LLMs. InstructorLite is a fork and spiritual successor to [instructor_ex](https://github.com/thmsmlr/instructor_ex) library, which is the Elixir member of the great [Instructor](https://useinstructor.com/) family.
  
