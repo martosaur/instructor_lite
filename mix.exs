@@ -49,7 +49,8 @@ defmodule InstructorLite.MixProject do
         "pages/philosophy.md",
         "pages/cookbooks/text-classification.livemd",
         "pages/cookbooks/vision.livemd",
-        "pages/cookbooks/text-to-dataframes.livemd"
+        "pages/cookbooks/text-to-dataframes.livemd",
+        "pages/cookbooks/batch-api.livemd"
       ],
       nest_modules_by_prefix: [InstructorLite.Adapters],
       groups_for_modules: [

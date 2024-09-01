@@ -1,0 +1,169 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Using OpenAI Batch API
+
+```elixir
+Mix.install(
+  [
+    {:instructor_lite, path: Path.expand("../../", __DIR__)},
+    {:req, "~> 0.5"},
+    {:multipart, "0.4.0"}
+  ]
+)
+```
+
+## Motivation
+
+OpenAI offers asynchronous [Batch API](https://platform.openai.com/docs/guides/batch) at a 50% discount. This can make a huge difference on the bill if we have a lot of workload that is done in the background and isn't time-sensitive.
+
+## Setup
+
+In order to run code in this notebook, you need to add your OpenAI API key as an `OPENAI_KEY` Livebook secret. It will then be accessible through an environment variable.
+
+```elixir
+secret_key = System.fetch_env!("LB_OPENAI_KEY")
+:ok
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Classifying All the Emails
+
+We'll use our classic email classification example, but this time for a bunch of emails at once.
+
+```elixir
+defmodule SpamPrediction do
+  use Ecto.Schema
+  use InstructorLite.Instruction
+
+  @notes """
+  ## Field Descriptions:
+  - class: Whether or not the email is spam.
+  - reason: A short, less than 10 word rationalization for the classification.
+  - score: A confidence score between 0.0 and 1.0 for the classification.
+  """
+  @primary_key false
+  embedded_schema do
+    field(:class, Ecto.Enum, values: [:spam, :not_spam])
+    field(:reason, :string)
+    field(:score, :float)
+  end
+
+  @impl true
+  def validate_changeset(changeset, _opts) do
+    changeset
+    |> Ecto.Changeset.validate_number(:score,
+      greater_than_or_equal_to: 0.0,
+      less_than_or_equal_to: 1.0
+    )
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, SpamPrediction, <<70, 79, 82, 49, 0, 0, 19, ...>>, {:validate_changeset, 2}}
+```
+
+```elixir
+opts = [
+  response_model: SpamPrediction,
+  adapter: InstructorLite.Adapters.OpenAI
+]
+
+prompts =
+  [
+    "Hello I am a Nigerian prince and I would like to send you money",
+    "Hello I know we never met but I got access to your webcam and have some spicy footage",
+    "Elixir Radar Newsletter. Issue #420"
+  ]
+  |> Enum.map(fn text ->
+    InstructorLite.prepare_prompt(%{
+        model: "gpt-4o-mini",
+        messages: [%{
+          role: "user",
+          content: "Classify first paragraph of an email:\n#{text}"
+        }]
+      },
+      opts
+    )
+  end)
+  |> Enum.with_index()
+
+jsonl =
+  prompts
+  |> Enum.map(fn {prompt, index} ->
+    Jason.encode!(%{custom_id: "#{index}", method: "POST", url: "/v1/chat/completions", body: prompt})
+  end)
+  |> Enum.join("\n")
+
+multipart =
+  Multipart.new()
+  |> Multipart.add_part(Multipart.Part.text_field("batch", "purpose"))
+  |> Multipart.add_part(
+    Multipart.Part.file_content_field("emails.jsonl", jsonl, :file, filename: "emails.jsonl")
+  )
+
+auth_headers = [{"Authorization", "Bearer #{secret_key}"}]
+mp_headers = [{"Content-Type", Multipart.content_type(multipart, "multipart/form-data")}]
+
+{:ok, %{body: %{"id" => file_id}}} =
+  Req.post("https://api.openai.com/v1/files",
+    headers: auth_headers ++ mp_headers,
+    body: Multipart.body_binary(multipart)
+  )
+
+{:ok, %{body: %{"id" => batch_id}}} =
+  Req.post("https://api.openai.com/v1/batches",
+    json: %{input_file_id: file_id, endpoint: "/v1/chat/completions", completion_window: "24h"},
+    headers: auth_headers
+  )
+
+:ok
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+Now we need to wait a little and fetch the batch result.
+
+```elixir
+{:ok, %{body: %{"output_file_id" => output_file_id}}} =
+  Req.get("https://api.openai.com/v1/batches/#{batch_id}", headers: auth_headers)
+
+{:ok, %{body: body}} =
+  Req.get("https://api.openai.com/v1/files/#{output_file_id}/content", headers: auth_headers)
+
+result =
+  body
+  |> String.split("\n", trim: true)
+  |> Enum.map(&Jason.decode!/1)
+  |> Enum.zip(prompts)
+  |> Enum.map(fn {%{"response" => %{"body" => response}}, prompt} ->
+    InstructorLite.consume_response(response, prompt, response_model: SpamPrediction)
+  end)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  ok: %SpamPrediction{class: :spam, reason: "Common spam trope of money scams", score: 0.95},
+  ok: %SpamPrediction{class: :spam, reason: "Threatening language and webcam mention", score: 0.95},
+  ok: %SpamPrediction{
+    class: :not_spam,
+    reason: "Newsletter title suggests legitimate content",
+    score: 0.9
+  }
+]
+```
+
+<!-- livebook:{"offset":4290,"stamp":{"token":"XCP.0u8LUVJewKQ1FRMqky47zdPB_1pX8-2jBURg4PqSfvs4FfION2QCgXQqSZgtky3XUOYUwm7Df4SUIudTHnVIr5h-HaK0mUMMj63NriP32u6GVhtTIA","version":2}} -->
