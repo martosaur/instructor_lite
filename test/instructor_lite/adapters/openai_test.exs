@@ -18,6 +18,9 @@ defmodule InstructorLite.Adapters.OpenAITest do
                    role: "system",
                    content: """
                    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
+                   Additional notes on the schema:
+
+                   Explanation
                    """
                  }
                ],
@@ -27,11 +30,6 @@ defmodule InstructorLite.Adapters.OpenAITest do
                  json_schema: %{
                    name: "schema",
                    strict: true,
-                   description: """
-                   Additional notes on the schema:
-
-                   Explanation
-                   """,
                    schema: :json_schema
                  }
                }

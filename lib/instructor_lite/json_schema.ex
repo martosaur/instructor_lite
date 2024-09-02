@@ -49,25 +49,6 @@ defmodule InstructorLite.JSONSchema do
     end
   end
 
-  defp fetch_ecto_schema_doc(ecto_schema) when is_ecto_schema(ecto_schema) do
-    ecto_schema_struct_literal = "%#{title_for(ecto_schema)}{}"
-
-    case Code.fetch_docs(ecto_schema) do
-      {_, _, _, _, _, _, docs} ->
-        docs
-        |> Enum.find_value(fn
-          {_, _, [^ecto_schema_struct_literal], %{"en" => doc}, %{}} ->
-            doc
-
-          _ ->
-            false
-        end)
-
-      {:error, _} ->
-        nil
-    end
-  end
-
   defp bfs_from_ecto_schema([], _seen_schemas), do: []
 
   defp bfs_from_ecto_schema([ecto_schema | rest], seen_schemas)
@@ -132,7 +113,6 @@ defmodule InstructorLite.JSONSchema do
         type: "object",
         required: required,
         properties: properties,
-        description: fetch_ecto_schema_doc(ecto_schema) || "",
         additionalProperties: false
       }
 

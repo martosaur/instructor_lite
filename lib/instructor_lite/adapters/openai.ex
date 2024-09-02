@@ -97,7 +97,7 @@ defmodule InstructorLite.Adapters.OpenAI do
     sys_message = [
       %{
         role: "system",
-        content: mandatory_part
+        content: mandatory_part <> optional_notes
       }
     ]
 
@@ -107,7 +107,6 @@ defmodule InstructorLite.Adapters.OpenAI do
       type: "json_schema",
       json_schema: %{
         name: "schema",
-        description: optional_notes,
         strict: true,
         schema: Keyword.fetch!(opts, :json_schema)
       }

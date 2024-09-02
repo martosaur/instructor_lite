@@ -9,7 +9,6 @@ defmodule JSONSchemaTest do
 
     expected_json_schema = %{
       type: "object",
-      description: "",
       title: "Child",
       required: [:id, :name],
       additionalProperties: false,
@@ -26,7 +25,6 @@ defmodule JSONSchemaTest do
     json_schema = JSONSchema.from_ecto_schema(TestSchemas.Embedded)
 
     expected_json_schema = %{
-      description: "",
       required: [:name],
       title: "Embedded",
       type: "object",
@@ -42,7 +40,6 @@ defmodule JSONSchemaTest do
 
     expected_json_schema = %{
       type: "object",
-      description: "",
       title: "AllEctoTypes",
       required: [
         :array,
@@ -89,7 +86,6 @@ defmodule JSONSchemaTest do
 
     expected_json_schema = %{
       additionalProperties: false,
-      description: "",
       properties: %{embedded: %{"$ref": "#/$defs/Embedded"}},
       required: [:embedded],
       title: "WithEmbedded",
@@ -97,7 +93,6 @@ defmodule JSONSchemaTest do
       "$defs": %{
         "Embedded" => %{
           type: "object",
-          description: "",
           title: "Embedded",
           required: [:name],
           additionalProperties: false,
@@ -118,7 +113,6 @@ defmodule JSONSchemaTest do
       "$defs": %{
         "Child" => %{
           type: "object",
-          description: "",
           title: "Child",
           required: [:id, :name],
           additionalProperties: false,
@@ -129,7 +123,6 @@ defmodule JSONSchemaTest do
         }
       },
       type: "object",
-      description: "",
       title: "WithChild",
       required: [:child, :id],
       additionalProperties: false,
@@ -146,7 +139,6 @@ defmodule JSONSchemaTest do
       "$defs": %{
         "Child" => %{
           type: "object",
-          description: "",
           title: "Child",
           required: [:id, :name],
           additionalProperties: false,
@@ -157,7 +149,6 @@ defmodule JSONSchemaTest do
         }
       },
       type: "object",
-      description: "",
       title: "WithChildren",
       required: [:children, :id],
       additionalProperties: false,
@@ -175,7 +166,6 @@ defmodule JSONSchemaTest do
 
     expected_json_schema = %{
       type: "object",
-      description: "",
       title: "SpamPrediction",
       required: [:class, :score],
       additionalProperties: false,
@@ -240,7 +230,6 @@ defmodule JSONSchemaTest do
       type: "object",
       title: "LinkedList",
       required: [:next, :value],
-      description: "",
       additionalProperties: false,
       properties: %{
         value: %{type: "integer"},
@@ -249,7 +238,6 @@ defmodule JSONSchemaTest do
       "$defs": %{
         "LinkedList" => %{
           type: "object",
-          description: "",
           title: "LinkedList",
           required: [:next, :value],
           additionalProperties: false,
