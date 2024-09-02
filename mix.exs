@@ -39,7 +39,7 @@ defmodule InstructorLite.MixProject do
 
   defp docs do
     [
-      main: "README",
+      main: "readme",
       source_url: @source_url,
       source_ref: "v#{@version}",
       extras: [
