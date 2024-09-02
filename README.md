@@ -14,7 +14,7 @@ The Instructor is useful for coaxing an LLM to return JSON that maps to an Ecto 
 ## Why Lite
 
 InstructorLite is designed to be:
-1. **Lean**. It does so little it makes you question if you should just write your own version.
+1. **Lean**. It does so little it makes you question if you should just write your own version!
 2. **Composable**. Almost everything it does can be overridden or extended.
 3. **Magic-free**. It doesn't hide complexity behind one line function calls, but does its best to provide you with enough information to understand what's going on.
 

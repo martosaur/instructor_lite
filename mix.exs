@@ -13,8 +13,7 @@ defmodule InstructorLite.MixProject do
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       docs: docs(),
-      package: package(),
-      aliases: aliases()
+      package: package()
     ]
   end
 
@@ -47,6 +46,7 @@ defmodule InstructorLite.MixProject do
         "README.md",
         "CHANGELOG.md",
         "pages/philosophy.md",
+        "pages/migrating_from_instructor.md",
         "pages/cookbooks/text-classification.livemd",
         "pages/cookbooks/vision.livemd",
         "pages/cookbooks/text-to-dataframes.livemd",
@@ -65,17 +65,11 @@ defmodule InstructorLite.MixProject do
       groups_for_extras: [
         Changelog: ["CHANGELOG.md"],
         Cookbooks: Path.wildcard("pages/cookbooks/*.livemd")
-      ]
+      ],
+      assets: %{
+        "pages/cookbooks/files" => "files"
+      }
     ]
-  end
-
-  defp aliases do
-    [docs: ["docs", &copy_images/1]]
-  end
-
-  defp copy_images(_) do
-    File.mkdir_p("doc/files/")
-    File.cp!("pages/cookbooks/files/shopify-screenshot.png", "doc/files/shopify-screenshot.png")
   end
 
   defp deps do
