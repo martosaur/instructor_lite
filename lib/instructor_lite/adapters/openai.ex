@@ -4,6 +4,10 @@ defmodule InstructorLite.Adapters.OpenAI do
 
   This adapter is implemented using chat completions endpoint and [structured outputs](https://platform.openai.com/docs/guides/structured-outputs/structured-outputs).
 
+  > #### JSON mode {: .tip}
+  >
+  > Even though the adapter uses strict JSON Schema mode by default, it respects all explicitly provided keys in `params`. To switch to a less strict [JSON mode](https://platform.openai.com/docs/guides/structured-outputs/json-mode), simply provide the `response_format` key in your params.
+
   ## Params
   `params` argument should be shaped as a [Create chat completion request body](https://platform.openai.com/docs/api-reference/chat/create).
    
@@ -103,7 +107,7 @@ defmodule InstructorLite.Adapters.OpenAI do
 
     params
     |> Map.put_new(:model, @default_model)
-    |> Map.put(:response_format, %{
+    |> Map.put_new(:response_format, %{
       type: "json_schema",
       json_schema: %{
         name: "schema",

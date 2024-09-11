@@ -161,6 +161,39 @@ defmodule InstructorLite.IntegrationTest do
 
       assert {:ok, %{guess: :tails}} = result
     end
+
+    test "linked list" do
+      result =
+        InstructorLite.instruct(
+          %{
+            model: "gpt-4o-mini",
+            messages: [
+              %{
+                role: "user",
+                content: "Make a linked list of 3 elements"
+              }
+            ],
+            response_format: %{
+              type: "json_schema",
+              json_schema: %{
+                name: "schema",
+                strict: false,
+                schema: TestSchemas.LinkedList.json_schema()
+              }
+            }
+          },
+          response_model: TestSchemas.LinkedList,
+          max_retries: 1,
+          adapter: OpenAI,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
+          ],
+          extra: 3
+        )
+
+      assert {:ok, %{next: %{next: %{next: nil}}}} = result
+    end
   end
 
   describe "Anthropic" do
@@ -314,6 +347,30 @@ defmodule InstructorLite.IntegrationTest do
         )
 
       assert {:ok, %{guess: :tails}} = result
+    end
+
+    test "linked list" do
+      result =
+        InstructorLite.instruct(
+          %{
+            messages: [
+              %{
+                role: "user",
+                content: "Make a linked list of 3 elements"
+              }
+            ]
+          },
+          response_model: TestSchemas.LinkedList,
+          max_retries: 1,
+          adapter: Anthropic,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)
+          ],
+          extra: 3
+        )
+
+      assert {:ok, %{next: %{next: %{next: nil}}}} = result
     end
   end
 

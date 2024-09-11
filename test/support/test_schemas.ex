@@ -91,19 +91,45 @@ defmodule InstructorLite.TestSchemas do
       embeds_one(:next, LinkedList)
     end
 
-    # @impl InstructorLite.Instruction
-    # def validate_changeset(cs, opts) do
-    #   max_items = Keyword.fetch!(opts, :max_list_items)
+    @impl InstructorLite.Instruction
+    def json_schema() do
+      %{
+        type: "object",
+        title: "LinkedList",
+        required: [:next, :value],
+        additionalProperties: false,
+        properties: %{
+          value: %{type: "integer"},
+          next: %{"$ref": "#/$defs/LinkedList"}
+        },
+        "$defs": %{
+          "LinkedList" => %{
+            type: ["object", "null"],
+            title: "LinkedList",
+            required: [:next, :value],
+            additionalProperties: false,
+            properties: %{
+              value: %{type: "integer"},
+              next: %{"$ref": "#/$defs/LinkedList"}
+            }
+          }
+        }
+      }
+    end
 
-    #   case do_validate(max_items, cs) do
-    #     :ok -> cs
-    #     :overflow -> Ecto.Changeset.add_error(cs, :next, "Too many items in the list!")
-    #   end
-    # end
+    @impl InstructorLite.Instruction
+    def validate_changeset(cs, opts) do
+      max_items = Keyword.fetch!(opts, :extra)
 
-    # defp do_validate(0, %{changes: %{next: %{}}}), do: :overflow
-    # defp do_validate(n, %{changes: %{next: %{} = next}}), do: do_validate(n - 1, next)
-    # defp do_validate(_, _), do: :ok
+      case do_validate(max_items, cs) do
+        :ok -> cs
+        :overflow -> Ecto.Changeset.add_error(cs, :next, "Too many items in the list!")
+      end
+    end
+
+    defp do_validate(0, %{changes: %{next: %{}}}), do: :overflow
+    defp do_validate(n, %{changes: %{next: %{} = next}}), do: do_validate(n - 1, next)
+    defp do_validate(_, _), do: :ok
   end
 
   defmodule CoinGuess do
