@@ -47,6 +47,7 @@ defmodule InstructorLite.MixProject do
         "CHANGELOG.md",
         "pages/philosophy.md",
         "pages/migrating_from_instructor.md",
+        "pages/local_development_guide.md",
         "pages/cookbooks/text-classification.livemd",
         "pages/cookbooks/vision.livemd",
         "pages/cookbooks/text-to-dataframes.livemd",
