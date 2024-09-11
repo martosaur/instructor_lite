@@ -290,10 +290,11 @@ defmodule InstructorLiteTest do
 
   describe "cast/2" do
     test "adhoc schema" do
-      model = {%{}, %{name: :string}}
+      model = {%{}, %{name: :string, age: :integer}}
       params = %{"name" => "foo"}
 
-      assert %Ecto.Changeset{changes: %{name: "foo"}} = InstructorLite.cast(model, params)
+      assert %Ecto.Changeset{changes: %{name: "foo"}, valid?: true} =
+               InstructorLite.cast(model, params)
     end
 
     test "actual schema" do

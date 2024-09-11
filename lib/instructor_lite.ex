@@ -197,9 +197,7 @@ defmodule InstructorLite do
   def cast({data, types}, params) do
     fields = Map.keys(types)
 
-    {data, types}
-    |> Ecto.Changeset.cast(params, fields)
-    |> Ecto.Changeset.validate_required(fields)
+    Ecto.Changeset.cast({data, types}, params, fields)
   end
 
   def cast(%response_model{} = data, params) do
