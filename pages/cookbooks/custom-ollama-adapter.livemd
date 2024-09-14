@@ -1,0 +1,421 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Custom Ollama Adapter
+
+```elixir
+Mix.install(
+  [
+    {:instructor_lite, "~> 0.2"},
+    {:req, "~> 0.5"}
+  ]
+)
+```
+
+## About Ollama
+
+[Ollama](https://ollama.com/) project provides a way to run open source LLMs locally, provided you have capable hardware.
+
+To run a model, just pick one from [the list](https://ollama.com/search) and run CLI command:
+
+```
+> ollama run llama3.1
+pulling manifest
+pulling 8eeb52dfb3bb... 100% ▕█████████████████████████████████████████████████████████████████████████████████████████████▏ 4.7 GB
+pulling 948af2743fc7... 100% ▕█████████████████████████████████████████████████████████████████████████████████████████████▏ 1.5 KB
+pulling 0ba8f0e314b4... 100% ▕█████████████████████████████████████████████████████████████████████████████████████████████▏  12 KB
+pulling 56bb8bd477a5... 100% ▕█████████████████████████████████████████████████████████████████████████████████████████████▏   96 B
+pulling 1a4c3c319823... 100% ▕█████████████████████████████████████████████████████████████████████████████████████████████▏  485 B
+verifying sha256 digest
+writing manifest
+success
+```
+
+The open source models come in so many shapes and sizes that it is impractical to try to fit them all into a single adapter. But have no fear, as InstructorLite makes it simple to write one for your specific needs!
+
+## Custom Adapter
+
+For this exercise, we'll write a custom adapter for Ollama running the Llama3.1 model.
+
+To do this, we need to create a module implementing the `InstructorLite.Adapter` behaviour, which requires four callbacks. Let's go through them one by one.
+
+<!-- livebook:{"break_markdown":true} -->
+
+The first callback is `send_request/2`, which is responsible for making a call with `params` to some kind of API endpoint. Looking at the Ollama docs, [chat completion](https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion) seems like a good endpoint to aim for, but there's no need to hardcode it in the adapter. We'll just require callers to provide it in full, including hostname and port. Since this is a model running locally, it will likely be something like `http://localhost:11434/api/chat`.
+
+```elixir
+defmodule OllamaAdapterSendRequest do
+  def send_request(params, options) do
+    # Remember, adapter-specific options are nested under `adapter_context` key
+    url = options |> Keyword.get(:adapter_context, []) |> Keyword.fetch!(:url)
+
+    case Req.post(url, json: params) do
+      {:ok, %{status: 200, body: body}} -> {:ok, body}
+      {:ok, response} -> {:error, response}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, OllamaAdapterSendRequest, <<70, 79, 82, 49, 0, 0, 8, ...>>, {:send_request, 2}}
+```
+
+The next callback is `initial_prompt/2`. This one enriches user-provided `params` with whatever is necessary to convince the LLM to fill the JSON schema. This part is very model-specific, so we need to consult the docs.
+
+Fast forward, after reading [the model card](https://ollama.com/library/llama3.1), [the chat completion](https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion) endpoint documentation and some explorative testing, we see that Llama3.1 supports using tools, which is one common way to ensure JSON output, used for example in the `InstructorLite.Adapters.Anthropic` adapter. The idea is that we can pretend that our JSON schema is a function tool, that the model can "call". Normally, a model will then receive the result of a function call and continue dialogue, but we will be only interested in the call itself. Okay, let's implement the `initial_prompt/2` callback using tool calls
+
+```elixir
+defmodule OllamaAdapterInitialPrompt do
+  def initial_prompt(params, opts) do
+    # We definitely need to instruct model to adhere to the schema
+    mandatory_part = """
+    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
+    """
+
+    # If optional notes provided, we attach them as well
+    optional_notes =
+      if notes = opts[:notes] do
+        """
+        Additional notes on the schema:
+
+        #{notes}
+        """
+      else
+        ""
+      end
+
+    # This prompt will be a message with a "system" role
+    sys_message = [
+      %{
+        role: "system",
+        content: mandatory_part <> optional_notes
+      }
+    ]
+
+    params
+    # This adapter is model-specific, so might as well enforce it here
+    |> Map.put(:model, "llama3.1")
+    |> Map.put(:stream, false)
+    # The user has likely provided their own prompt, so we need to be nice and not overwrite it
+    |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)
+    # Finally, we represent our json schema as a function tool available for a call
+    |> Map.put(:tools, [
+      %{
+        type: "function",
+        function: %{
+          name: "Schema",
+          description:
+            "Correctly extracted `Schema` with all the required parameters with correct types",
+          parameters: Keyword.fetch!(opts, :json_schema)
+        }
+      }
+    ])
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, OllamaAdapterInitialPrompt, <<70, 79, 82, 49, 0, 0, 13, ...>>, {:initial_prompt, 2}}
+```
+
+At this point, we can actually try to combine both callbacks and see if we can get a response.
+
+```elixir
+json_schema = InstructorLite.JSONSchema.from_ecto_schema(%{name: :string})
+prompt = OllamaAdapterInitialPrompt.initial_prompt(%{messages: [
+  %{role: "user", content: "Who was the first president of the united states?"}
+]}, json_schema: json_schema)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{
+  messages: [
+    %{
+      content: "As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n\n",
+      role: "system"
+    },
+    %{content: "Who was the first president of the united states?", role: "user"}
+  ],
+  stream: false,
+  tools: [
+    %{
+      function: %{
+        name: "Schema",
+        description: "Correctly extracted `Schema` with all the required parameters with correct types",
+        parameters: %{
+          type: "object",
+          title: "root",
+          required: [:name],
+          properties: %{name: %{type: "string"}},
+          additionalProperties: false
+        }
+      },
+      type: "function"
+    }
+  ],
+  model: "llama3.1"
+}
+```
+
+```elixir
+url = "http://localhost:11434/api/chat"
+{:ok, response} = OllamaAdapterSendRequest.send_request(prompt, adapter_context: [url: url])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok,
+ %{
+   "created_at" => "2024-09-14T19:41:26.286348Z",
+   "done" => true,
+   "done_reason" => "stop",
+   "eval_count" => 17,
+   "eval_duration" => 1385711000,
+   "load_duration" => 28585542,
+   "message" => %{
+     "content" => "",
+     "role" => "assistant",
+     "tool_calls" => [
+       %{"function" => %{"arguments" => %{"name" => "George Washington"}, "name" => "Schema"}}
+     ]
+   },
+   "model" => "llama3.1",
+   "prompt_eval_count" => 195,
+   "prompt_eval_duration" => 3255144000,
+   "total_duration" => 4671528459
+ }}
+```
+
+Great! This brings us to the `parse_response/2` callback. Its job is to extract a parsed JSON object from the raw response, which we'll subsequently attempt to cast to our Ecto schema.
+
+```elixir
+defmodule OllamaAdapterParseResponse do
+  def parse_response(response, _opts) do
+    case response do
+      %{
+        "message" => %{"tool_calls" => [%{"function" => %{"arguments" => json}}]}
+      } ->
+        {:ok, json}
+
+      other ->
+        {:error, :unexpected_response, other}
+    end
+  end
+end
+
+{:ok, params} = OllamaAdapterParseResponse.parse_response(response, [])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, %{"name" => "George Washington"}}
+```
+
+That is actually enough for a happy path! But there is one more callback that deals with cases when the output doesn't quite adhere to the schema. Imagine if we received a different response from a model:
+
+```elixir
+hypothetical = %{"name" => false}
+changeset = Ecto.Changeset.cast({%{}, %{name: :string}}, hypothetical, [:name])
+errors = InstructorLite.ErrorFormatter.format_errors(changeset)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"name - is invalid"
+```
+
+We need to retry our query and relay the errors to the model, so it can correct its previous answer. `retry_callback/5` is the biggest callback of all, simply because it can potentially need so much context to do that. It needs to know what `params` were, which data we attempted to cast and which errors we saw, as well as the raw response and, of course, options. For this adapter, we will only need `params`, `errors` and raw `response`.
+
+```elixir
+defmodule OllamaAdapterRetryPrompt do
+  def retry_prompt(params, _resp_params, errors, response, _opts) do
+    message = Map.fetch!(response, "message")
+
+    do_better = [
+      # We need to append model's response to the dialogue so it would know what its previous answer was
+      message,
+      %{
+        # Ollama has a `tool` message role which we are going to use
+        role: "tool",
+        content: """
+        Validation failed. Please try again and fix following validation errors
+
+        #{errors}
+        """
+      }
+    ]
+
+    Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
+  end
+end
+
+retry_prompt = OllamaAdapterRetryPrompt.retry_prompt(prompt, nil, errors, response, [])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{
+  messages: [
+    %{
+      content: "As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n\n",
+      role: "system"
+    },
+    %{content: "Who was the first president of the united states?", role: "user"},
+    %{
+      "content" => "",
+      "role" => "assistant",
+      "tool_calls" => [
+        %{"function" => %{"arguments" => %{"name" => "George Washington"}, "name" => "Schema"}}
+      ]
+    },
+    %{
+      content: "Validation failed. Please try again and fix following validation errors\n\nname - is invalid\n",
+      role: "tool"
+    }
+  ],
+  stream: false,
+  tools: [
+    %{
+      function: %{
+        name: "Schema",
+        description: "Correctly extracted `Schema` with all the required parameters with correct types",
+        parameters: %{
+          type: "object",
+          title: "root",
+          required: [:name],
+          properties: %{name: %{type: "string"}},
+          additionalProperties: false
+        }
+      },
+      type: "function"
+    }
+  ],
+  model: "llama3.1"
+}
+```
+
+This retry prompt can now be used for a `send_request/2` call. We won't do it though, to avoid gaslighting the model by suggesting its answer was incorrect.
+
+## Tying It All Together
+
+Now we can put all these callbacks into a single module, confess to the compiler that our intention is to implement a behavior, and let the `InstructorLite` main interface handle all the logistics.
+
+```elixir
+defmodule OllamaAdapter do
+  @behaviour InstructorLite.Adapter
+
+  @impl InstructorLite.Adapter
+  def send_request(params, options) do
+    url = options |> Keyword.get(:adapter_context, []) |> Keyword.fetch!(:url)
+
+    case Req.post(url, json: params) do
+      {:ok, %{status: 200, body: body}} -> {:ok, body}
+      {:ok, response} -> {:error, response}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @impl InstructorLite.Adapter
+  def initial_prompt(params, opts) do
+    mandatory_part = """
+    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
+    """
+
+    optional_notes =
+      if notes = opts[:notes] do
+        """
+        Additional notes on the schema:
+
+        #{notes}
+        """
+      else
+        ""
+      end
+
+    sys_message = [
+      %{
+        role: "system",
+        content: mandatory_part <> optional_notes
+      }
+    ]
+
+    params
+    |> Map.put(:model, "llama3.1")
+    |> Map.put(:stream, false)
+    |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)
+    |> Map.put(:tools, [
+      %{
+        type: "function",
+        function: %{
+          name: "Schema",
+          description:
+            "Correctly extracted `Schema` with all the required parameters with correct types",
+          parameters: Keyword.fetch!(opts, :json_schema)
+        }
+      }
+    ])
+  end
+
+  @impl InstructorLite.Adapter
+  def parse_response(response, _opts) do
+    case response do
+      %{
+        "message" => %{"tool_calls" => [%{"function" => %{"arguments" => json}}]}
+      } ->
+        {:ok, json}
+
+      other ->
+        {:error, :unexpected_response, other}
+    end
+  end
+
+  @impl InstructorLite.Adapter
+  def retry_prompt(params, _resp_params, errors, response, _opts) do
+    message = Map.fetch!(response, "message")
+
+    do_better = [
+      message,
+      %{
+        role: "tool",
+        content: """
+        Validation failed. Please try again and fix following validation errors
+
+        #{errors}
+        """
+      }
+    ]
+
+    Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
+  end
+end
+
+InstructorLite.instruct(%{
+    messages: [
+      %{role: "user", content: "Dr. John Doe is forty two"}
+    ],
+  },
+  adapter: OllamaAdapter,
+  notes: "Trim down all people's titles",
+  response_model: %{name: :string, age: :integer},
+  adapter_context: [
+    url: "http://localhost:11434/api/chat"
+  ]
+)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, %{name: "John Doe", age: 42}}
+```
