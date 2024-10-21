@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.3.0
+
   * Add Gemini adapter
 
 ## v0.2.0
