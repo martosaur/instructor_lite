@@ -92,6 +92,26 @@ iex> InstructorLite.instruct(%{
 {:ok, %UserInfo{name: "John Doe", age: 42}}
 ```
 
+### Gemini
+
+```elixir
+iex> InstructorLite.instruct(%{
+    contents: [
+      %{
+        role: "user",
+        parts: [%{text: "John Doe is fourty two years old"}]
+      }
+    ]
+  },
+  response_model: UserInfo,
+  adapter: InstructorLite.Adapters.Gemini,
+  adapter_context: [
+    api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
+  ]
+)
+{:ok, %UserInfo{name: "John Doe", age: 42}}
+```
+
 <!-- tabs-close -->
 
 ## Configuration

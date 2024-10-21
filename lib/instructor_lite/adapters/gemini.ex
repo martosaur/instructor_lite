@@ -1,5 +1,39 @@
 defmodule InstructorLite.Adapters.Gemini do
   @moduledoc """
+  [Gemini](https://ai.google.dev/gemini-api) adapter.
+
+  This adapter is implemented using [Text generation](https://ai.google.dev/gemini-api/docs/text-generation) endpoint configured for [structured output](https://ai.google.dev/gemini-api/docs/structured-output?lang=rest#supply-schema-in-config)
+
+  ## Params
+  `params` argument should be shaped as a [`models.GenerateBody` request body](https://ai.google.dev/api/generate-content#request-body)
+
+  ## Example
+
+  ```
+  InstructorLite.instruct(
+    %{contents: [%{role: "user", parts: [%{text: "John is 25yo"}]}]},
+    response_model: %{name: :string, age: :integer},
+    json_schema: %{
+      type: "object",
+      required: [:age, :name],
+      properties: %{name: %{type: "string"}, age: %{type: "integer"}}
+    },
+    adapter: InstructorLite.Adapters.Gemini,
+    adapter_context: [
+      model: "gemini-1.5-flash-8b",
+      api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
+    ]
+  )
+  {:ok, %{name: "John", age: 25}}
+  ```
+
+  > #### Specifying model {: .tip}
+  >
+  > Note how, unlike other adapters, the Gemini adapter expects `model` under `adapter_context`. 
+
+  > #### JSON Schema {: .warning}
+  >
+  > Gemini's idea of JSON Schema is [quite different](https://ai.google.dev/api/generate-content#generationconfig) from other major models, so `InstructorLite.JSONSchema` won't help you even for simple cases. Luckily, the Gemini API provides detailed errors for invalid schemas.
 
   """
   @behaviour InstructorLite.Adapter
@@ -34,6 +68,13 @@ defmodule InstructorLite.Adapters.Gemini do
                          ]
                        )
 
+  @doc """
+  Make request to Gemini API
+
+  ## Options
+
+  #{NimbleOptions.docs(@send_request_schema)}
+  """
   @impl InstructorLite.Adapter
   def send_request(params, opts) do
     context =
@@ -59,6 +100,9 @@ defmodule InstructorLite.Adapters.Gemini do
     end
   end
 
+  @doc """
+  Puts `systemInstruction` and updates `generationConfig` in `params` with prompt based on `json_schema` and `notes`.
+  """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
     mandatory_part = """
@@ -93,6 +137,9 @@ defmodule InstructorLite.Adapters.Gemini do
     end)
   end
 
+  @doc """
+  Updates `params` with prompt for retrying a request.
+  """
   @impl InstructorLite.Adapter
   def retry_prompt(params, resp_params, errors, _response, _opts) do
     do_better = [
@@ -114,13 +161,21 @@ defmodule InstructorLite.Adapters.Gemini do
     Map.update(params, :contents, do_better, fn contents -> contents ++ do_better end)
   end
 
+  @doc """
+  Parse text generation endpoint response.
+
+  Can return:
+    * `{:ok, parsed_json}` on success.
+    * `{:error, :refusal, prompt_feedback}` if [request was blocked](https://ai.google.dev/api/generate-content#generatecontentresponse).
+    * `{:error, :unexpected_response, response}` if response is of unexpected shape.
+  """
   @impl InstructorLite.Adapter
   def parse_response(response, _opts) do
     case response do
       %{"candidates" => [%{"content" => %{"parts" => [%{"text" => text}]}}]} ->
         Jason.decode(text)
 
-      %{"promptFeedback" => %{"blockReason" => reason}} ->
+      %{"promptFeedback" => %{"blockReason" => _} = reason} ->
         {:error, :refusal, reason}
 
       other ->
