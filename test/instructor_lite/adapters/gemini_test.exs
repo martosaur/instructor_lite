@@ -160,7 +160,7 @@ defmodule InstructorLite.Adapters.GeminiTest do
         }
       }
 
-      assert {:error, :refusal, "OTHER"} =
+      assert {:error, :refusal, %{"blockReason" => "OTHER"}} =
                Gemini.parse_response(response, [])
     end
 

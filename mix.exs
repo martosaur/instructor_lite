@@ -61,7 +61,8 @@ defmodule InstructorLite.MixProject do
         Adapters: [
           InstructorLite.Adapters.Anthropic,
           InstructorLite.Adapters.OpenAI,
-          InstructorLite.Adapters.Llamacpp
+          InstructorLite.Adapters.Llamacpp,
+          InstructorLite.Adapters.Gemini
         ]
       ],
       groups_for_extras: [

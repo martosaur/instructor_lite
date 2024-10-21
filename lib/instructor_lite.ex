@@ -125,6 +125,31 @@ defmodule InstructorLite do
   {:ok, %{name: "John Doe", age: 42}}
   ```
 
+  ### Gemini
+
+  ```elixir
+  iex> InstructorLite.instruct(%{
+      contents: [
+        %{
+          role: "user",
+          parts: [%{text: "John Doe is fourty two years old"}]
+        }
+      ]
+    },
+    response_model: %{name: :string, age: :integer},
+    json_schema: %{
+      type: "object",
+      required: [:age, :name],
+      properties: %{name: %{type: "string"}, age: %{type: "integer"}}
+    },
+    adapter: InstructorLite.Adapters.Gemini,
+    adapter_context: [
+      api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
+    ]
+  )
+  {:ok, %{name: "John Doe", age: 42}}
+  ```
+
   <!-- tabs-close -->
 
   ### Using `max_retries`

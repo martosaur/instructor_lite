@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+  * Add Gemini adapter
+
 ## v0.2.0
   
   * [OpenAI] Do not overwrite `response_format` params key if provided by user
