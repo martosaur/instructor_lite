@@ -104,6 +104,11 @@ iex> InstructorLite.instruct(%{
     ]
   },
   response_model: UserInfo,
+  json_schema: %{
+    type: "object",
+    required: [:age, :name],
+    properties: %{name: %{type: "string"}, age: %{type: "integer"}},
+  },
   adapter: InstructorLite.Adapters.Gemini,
   adapter_context: [
     api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
