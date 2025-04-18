@@ -31,6 +31,30 @@ defmodule InstructorLite.Adapters.GeminiTest do
                }
              }
     end
+
+    test "merges into users generation config" do
+      params = %{generationConfig: %{seed: 42}}
+
+      assert Gemini.initial_prompt(params, json_schema: :json_schema, notes: "Explanation") == %{
+               generationConfig: %{
+                 responseMimeType: "application/json",
+                 responseSchema: :json_schema,
+                 seed: 42
+               },
+               systemInstruction: %{
+                 parts: [
+                   %{
+                     text: """
+                     As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
+                     Additional notes on the schema:
+
+                     Explanation
+                     """
+                   }
+                 ]
+               }
+             }
+    end
   end
 
   describe "retry_prompt/5" do
