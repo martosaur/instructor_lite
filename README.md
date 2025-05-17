@@ -117,6 +117,26 @@ iex> InstructorLite.instruct(%{
 {:ok, %UserInfo{name: "John Doe", age: 42}}
 ```
 
+### Grok
+
+Grok API is OpenAI-compatible, so all we need to do is to provide OpenAI adapter with correct `url` and `model_name`
+
+```elixir
+iex> InstructorLite.instruct(%{
+    model: "grok-3-latest",
+    messages: [
+      %{role: "user", content: "John Doe is fourty two years old"}
+    ]
+  },
+  response_model: UserInfo,
+  adapter_context: [
+    url: "https://api.x.ai/v1/chat/completions",
+    api_key: Application.fetch_env!(:instructor_lite, :grok_key)
+  ]
+)
+{:ok, %UserInfo{name: "John Doe", age: 42}}
+```
+
 <!-- tabs-close -->
 
 ## Configuration
