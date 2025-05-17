@@ -18,7 +18,10 @@ InstructorLite is designed to be:
 2. **Composable**. Almost everything it does can be overridden or extended.
 3. **Magic-free**. It doesn't hide complexity behind one line function calls, but does its best to provide you with enough information to understand what's going on.
 
-InstructorLite comes with 3 adapters: [OpenAI](https://openai.com/api/), [Anthropic](https://www.anthropic.com/) and [Llamacpp](https://github.com/ggerganov/llama.cpp). 
+InstructorLite is tested to be compatible with the following providers:
+[OpenAI](https://openai.com/api/), [Anthropic](https://www.anthropic.com/),
+[Gemini](https://ai.google.dev/), [Grok](https://x.ai/) and
+[Llamacpp](https://github.com/ggerganov/llama.cpp). 
 
 ## Features
 
