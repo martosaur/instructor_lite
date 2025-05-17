@@ -6,4 +6,5 @@ config :instructor_lite,
   openai_key: "api_key",
   anthropic_key: "api_key",
   llamacpp_url: "http://localhost:8000/completion",
-  gemini_key: "api_key"
+  gemini_key: "api_key",
+  grok_key: "api_key"
