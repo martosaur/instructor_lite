@@ -2,7 +2,7 @@ defmodule InstructorLite.IntegrationTest do
   use ExUnit.Case, async: true
 
   alias InstructorLite.TestSchemas
-  alias InstructorLite.Adapters.{Anthropic, OpenAI, Llamacpp, Gemini}
+  alias InstructorLite.Adapters.{Anthropic, OpenAI, Llamacpp, Gemini, ChatCompletionsCompatible}
 
   @moduletag :integration
 
@@ -569,7 +569,7 @@ defmodule InstructorLite.IntegrationTest do
           },
           response_model: %{name: :string, birth_date: :date},
           max_retries: 1,
-          adapter: OpenAI,
+          adapter: ChatCompletionsCompatible,
           adapter_context: [
             url: "https://api.x.ai/v1/chat/completions",
             http_client: Req,
@@ -596,7 +596,7 @@ defmodule InstructorLite.IntegrationTest do
             ]
           },
           response_model: TestSchemas.SpamPrediction,
-          adapter: OpenAI,
+          adapter: ChatCompletionsCompatible,
           adapter_context: [
             url: "https://api.x.ai/v1/chat/completions",
             http_client: Req,
@@ -621,7 +621,7 @@ defmodule InstructorLite.IntegrationTest do
             ]
           },
           response_model: TestSchemas.WithEmbedded,
-          adapter: OpenAI,
+          adapter: ChatCompletionsCompatible,
           adapter_context: [
             url: "https://api.x.ai/v1/chat/completions",
             http_client: Req,
@@ -646,7 +646,7 @@ defmodule InstructorLite.IntegrationTest do
             ]
           },
           response_model: TestSchemas.AllEctoTypes,
-          adapter: OpenAI,
+          adapter: ChatCompletionsCompatible,
           adapter_context: [
             url: "https://api.x.ai/v1/chat/completions",
             http_client: Req,
@@ -707,7 +707,7 @@ defmodule InstructorLite.IntegrationTest do
           },
           response_model: TestSchemas.CoinGuess,
           max_retries: 1,
-          adapter: OpenAI,
+          adapter: ChatCompletionsCompatible,
           adapter_context: [
             url: "https://api.x.ai/v1/chat/completions",
             http_client: Req,
@@ -741,7 +741,7 @@ defmodule InstructorLite.IntegrationTest do
           },
           response_model: TestSchemas.LinkedList,
           max_retries: 1,
-          adapter: OpenAI,
+          adapter: ChatCompletionsCompatible,
           adapter_context: [
             url: "https://api.x.ai/v1/chat/completions",
             http_client: Req,
