@@ -62,7 +62,8 @@ defmodule InstructorLite.MixProject do
           InstructorLite.Adapters.Anthropic,
           InstructorLite.Adapters.OpenAI,
           InstructorLite.Adapters.Llamacpp,
-          InstructorLite.Adapters.Gemini
+          InstructorLite.Adapters.Gemini,
+          InstructorLite.Adapters.ChatCompletionsCompatible
         ]
       ],
       groups_for_extras: [

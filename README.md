@@ -132,6 +132,7 @@ iex> InstructorLite.instruct(%{
     ]
   },
   response_model: UserInfo,
+  adapter: InstructorLite.Adapters.ChatCompletionsCompatible,
   adapter_context: [
     url: "https://api.x.ai/v1/chat/completions",
     api_key: Application.fetch_env!(:instructor_lite, :grok_key)
