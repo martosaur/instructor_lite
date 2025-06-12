@@ -57,7 +57,7 @@ Now let's use `InstructorLite.instruct/2` to fill the schema from unstructured t
 
 ```elixir
 iex> InstructorLite.instruct(%{
-    messages: [
+    input: [
       %{role: "user", content: "John Doe is fourty two years old"}
     ]
   },
@@ -122,7 +122,8 @@ iex> InstructorLite.instruct(%{
 
 ### Grok
 
-Grok API is OpenAI-compatible, so all we need to do is to provide OpenAI adapter with correct `url` and `model_name`
+Grok API is compatible with OpenAI Chat Completions endpoint, so all we can use
+`ChatCompletionsCompatible` adapter with grok's `url` and `model_name`
 
 ```elixir
 iex> InstructorLite.instruct(%{

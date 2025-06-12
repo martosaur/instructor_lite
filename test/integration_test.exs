@@ -12,7 +12,7 @@ defmodule InstructorLite.IntegrationTest do
         InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
-            messages: [
+            input: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ]
           },
@@ -34,7 +34,7 @@ defmodule InstructorLite.IntegrationTest do
         InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
-            messages: [
+            input: [
               %{
                 role: "user",
                 content:
@@ -59,7 +59,7 @@ defmodule InstructorLite.IntegrationTest do
         InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
-            messages: [
+            input: [
               %{
                 role: "user",
                 content: "Please fill in test data"
@@ -83,7 +83,7 @@ defmodule InstructorLite.IntegrationTest do
         InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
-            messages: [
+            input: [
               %{
                 role: "user",
                 content: "Please fill test data"
@@ -142,7 +142,7 @@ defmodule InstructorLite.IntegrationTest do
         InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
-            messages: [
+            input: [
               %{
                 role: "user",
                 content: "Guess the result!"
@@ -167,16 +167,16 @@ defmodule InstructorLite.IntegrationTest do
         InstructorLite.instruct(
           %{
             model: "gpt-4o-mini",
-            messages: [
+            input: [
               %{
                 role: "user",
                 content: "Make a linked list of 3 elements"
               }
             ],
-            response_format: %{
-              type: "json_schema",
-              json_schema: %{
-                name: "schema",
+            text: %{
+              format: %{
+                type: "json_schema",
+                name: "linked_list",
                 strict: false,
                 schema: TestSchemas.LinkedList.json_schema()
               }

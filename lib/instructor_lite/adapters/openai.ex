@@ -1,21 +1,21 @@
 defmodule InstructorLite.Adapters.OpenAI do
   @moduledoc """
-  [OpenAI](https://platform.openai.com/docs/overview) adapter.
+  [OpenAI](https://platform.openai.com/docs/overview) adapter. 
 
-  This adapter is implemented using chat completions endpoint and [structured outputs](https://platform.openai.com/docs/guides/structured-outputs/structured-outputs).
-
-  > #### JSON mode {: .tip}
-  >
-  > Even though the adapter uses strict JSON Schema mode by default, it respects all explicitly provided keys in `params`. To switch to a less strict [JSON mode](https://platform.openai.com/docs/guides/structured-outputs/json-mode), simply provide the `response_format` key in your params.
+  This adapter is implemented using
+  [responses](https://platform.openai.com/docs/api-reference/responses) endpoint
+  and [structured
+  outputs](https://platform.openai.com/docs/guides/structured-outputs/structured-outputs).
 
   ## Params
-  `params` argument should be shaped as a [Create chat completion request body](https://platform.openai.com/docs/api-reference/chat/create).
+  `params` argument should be shaped as a [Create model response request
+  body](https://platform.openai.com/docs/api-reference/responses/create).
    
   ## Example
 
   ```
   InstructorLite.instruct(%{
-      messages: [%{role: "user", content: "John is 25yo"}],
+      input: [%{role: "user", content: "John is 25yo"}],
       model: "gpt-4o-mini",
       service_tier: "default"
     },
@@ -48,7 +48,7 @@ defmodule InstructorLite.Adapters.OpenAI do
                          ],
                          url: [
                            type: :string,
-                           default: "https://api.openai.com/v1/chat/completions",
+                           default: "https://api.openai.com/v1/responses",
                            doc: "API endpoint to use for sending requests"
                          ]
                        )
@@ -80,6 +80,8 @@ defmodule InstructorLite.Adapters.OpenAI do
   @doc """
   Updates `params` with prompt based on `json_schema` and `notes`.
 
+  It uses `instructions` parameter for system prompt.
+
   Also specifies default `#{@default_model}` model if not provided by a user. 
   """
   @impl InstructorLite.Adapter
@@ -98,33 +100,31 @@ defmodule InstructorLite.Adapters.OpenAI do
         ""
       end
 
-    sys_message = [
-      %{
-        role: "system",
-        content: mandatory_part <> optional_notes
-      }
-    ]
-
     params
     |> Map.put_new(:model, @default_model)
-    |> Map.put_new(:response_format, %{
-      type: "json_schema",
-      json_schema: %{
+    |> Map.put_new(:text, %{
+      format: %{
+        type: "json_schema",
         name: "schema",
         strict: true,
         schema: Keyword.fetch!(opts, :json_schema)
       }
     })
-    |> Map.update(:messages, sys_message, fn msgs -> sys_message ++ msgs end)
+    |> Map.put(:instructions, mandatory_part <> optional_notes)
   end
 
   @doc """
   Updates `params` with prompt for retrying a request.
+
+  If the initial request was made with conversation state (enabled by
+  default), it will drop previous chat messages from the request and specify
+  `previous_response_id` instead. If conversation state is disabled, it will
+  append new messages to the previous `input` the same way chat completions-based
+  adapters do.
   """
   @impl InstructorLite.Adapter
-  def retry_prompt(params, resp_params, errors, _response, _opts) do
+  def retry_prompt(params, resp_params, errors, response, _opts) do
     do_better = [
-      %{role: "assistant", content: Jason.encode!(resp_params)},
       %{
         role: "system",
         content: """
@@ -135,7 +135,24 @@ defmodule InstructorLite.Adapters.OpenAI do
       }
     ]
 
-    Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
+    case response do
+      %{"store" => true, "id" => response_id} ->
+        params
+        |> Map.put(:input, do_better)
+        |> Map.put(:previous_response_id, response_id)
+        |> Map.delete(:instructions)
+
+      _ ->
+        Map.update!(params, :input, fn input ->
+          assistant_response = %{role: "assistant", content: Jason.encode!(resp_params)}
+
+          if is_binary(input) do
+            [%{role: "user", content: input}, assistant_response | do_better]
+          else
+            input ++ [assistant_response | do_better]
+          end
+        end)
+    end
   end
 
   @doc """
@@ -149,11 +166,17 @@ defmodule InstructorLite.Adapters.OpenAI do
   @impl InstructorLite.Adapter
   def parse_response(response, _opts) do
     case response do
-      %{"choices" => [%{"message" => %{"content" => json, "refusal" => nil}}]} ->
-        Jason.decode(json)
+      %{"output" => output} ->
+        Enum.find_value(output, {:error, :unexpected_response, response}, fn
+          %{"role" => "assistant", "content" => [%{"text" => text}]} ->
+            Jason.decode(text)
 
-      %{"choices" => [%{"message" => %{"refusal" => refusal}}]} ->
-        {:error, :refusal, refusal}
+          %{"role" => "assistant", "content" => [%{"refusal" => reason}]} ->
+            {:error, :refusal, reason}
+
+          _ ->
+            false
+        end)
 
       other ->
         {:error, :unexpected_response, other}

@@ -32,6 +32,7 @@ defmodule InstructorLite.MixProject do
       description: "Structured prompting for LLMs",
       licenses: ["MIT"],
       links: %{
+        "Changelog" => "https://hexdocs.pm/instructor_lite/changelog.html",
         "GitHub" => @source_url
       }
     ]
@@ -83,7 +84,8 @@ defmodule InstructorLite.MixProject do
       {:req, "~> 0.5 or ~> 1.0", optional: true},
       {:nimble_options, "~> 1.1"},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
-      {:mox, "~> 1.2", only: :test}
+      {:mox, "~> 1.2", only: :test},
+      {:makeup_diff, "~> 0.1", only: :dev, runtime: false}
     ]
   end
 end
