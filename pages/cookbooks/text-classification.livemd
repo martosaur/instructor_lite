@@ -67,7 +67,7 @@ end
 is_spam? = fn text ->
   InstructorLite.instruct(%{
       model: "gpt-4o-mini",
-      messages: [
+      input: [
         %{
           role: "user",
           content: """
@@ -95,7 +95,7 @@ is_spam?.("Hello I am a Nigerian prince and I would like to send you money")
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, %SpamPrediction{class: :spam, reason: "Common spam trope about money", score: 0.95}}
+{:ok, %SpamPrediction{class: :spam, reason: "Common spam trope", score: 0.95}}
 ```
 
 We don't have to stop just at a boolean inclusion, we can also easily extend this idea to multiple categories or classes that we can classify the text into. In this example, let's consider classifying support emails. We want to know whether it's a `general_inquiry`, `billing_issue`, or a `technical_issue` perhaps it rightly fits in multiple classes. This can be useful if we want to cc' specialized support agents when intersecting customer issues occur
@@ -125,7 +125,7 @@ end
 classify_email = fn text ->
   {:ok, %{tags: result}} =
     InstructorLite.instruct(%{
-        messages: [
+        input: [
           %{
             role: "user",
             content: "Classify the following text: #{text}"
@@ -148,4 +148,4 @@ classify_email.("My account is locked and I can't access my billing info.")
 [:technical_issue, :billing_issue]
 ```
 
-<!-- livebook:{"offset":4685,"stamp":{"token":"XCP.piCFFvM4UdfB4LjkjwMf2_8-2xjr87WuqUlbcBvMMI-bUvGSQ-Tx5Ulp88x9jlZhxy6TIigBop8tk2OVP3E_vm7nFV-QYXxQHAO5ydrbjVczreUnxQ","version":2}} -->
+<!-- livebook:{"offset":4672,"stamp":{"token":"XCP.WCL-sPHDy6D6Ffcx4wLTdEsSx7q-u1e24TeLgApYlMLmNC-oEIa4NvZ_wkFaqUQn9DA0lk7Wk1qgpS2zbp-yf39li8P5mipHQKfexcUdtFEPEIoUgA","version":2}} -->

@@ -1,0 +1,186 @@
+<!-- livebook:{"file_entries":[{"name":"shopify-screenshot.png","type":"attachment"}],"persist_outputs":true} -->
+
+# OpenAI Advanced Features
+
+```elixir
+Mix.install(
+  [
+    {:instructor_lite, path: Path.expand("../../", __DIR__)},
+    {:req, "~> 0.5"},
+    {:kino, "~> 0.16"}
+  ]
+)
+```
+
+## Motivation
+
+OpenAI has introduced a lot of features since InstructorLite was first released. Let's explore some of them and see if they can be of any help.
+
+## Setup
+
+In order to run code in this notebook, you need to add your OpenAI API key as an OPENAI_KEY Livebook secret. It will then be accessible through an environment variable.
+
+```elixir
+secret_key = System.fetch_env!("LB_OPENAI_KEY")
+:ok
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Image Input
+
+![](files/shopify-screenshot.png)
+
+```elixir
+file = Kino.FS.file_path("shopify-screenshot.png") |> File.read!()
+base64_image = "data:image/png;base64," <> Base.encode64(file)
+
+defmodule Product do
+  use Ecto.Schema
+
+  @primary_key false
+  embedded_schema do
+    field(:name, :string)
+    field(:price, :decimal)
+    field(:currency, Ecto.Enum, values: [:usd, :gbp, :eur, :cny])
+    field(:color, :string)
+  end
+end
+
+{:ok, result} =
+  InstructorLite.instruct(%{
+      model: "gpt-4o-mini",
+      input: [
+        %{
+          role: "user",
+          content: [
+            %{type: "input_text", text: "What is the product details of the following image?"},
+            %{type: "input_image", image_url: base64_image}
+          ]
+        }
+      ]
+    },
+    response_model: Product,
+    adapter_context: [api_key: secret_key]
+  )
+
+result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Product{
+  name: "Thomas Wooden Railway Thomas the Tank Engine",
+  price: Decimal.new("33.0"),
+  currency: :usd,
+  color: "blue"
+}
+```
+
+## Built-in Tool Use
+
+OpenAI supports a number of built-in tools, such as web search!
+
+```elixir
+defmodule Package do
+  use Ecto.Schema
+
+  @primary_key false
+  embedded_schema do
+    field(:name, :string)
+    field(:github_link, :string)
+    field(:latest_version, :string)
+  end
+end
+
+{:ok, result} =
+  InstructorLite.instruct(%{
+      model: "gpt-4o-mini",
+      tools: [%{type: "web_search_preview"}],
+      input: "We want to know about: InstructorLite Hex package"
+    },
+    response_model: Package,
+    adapter_context: [api_key: secret_key]
+  )
+
+result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Package{
+  name: "InstructorLite",
+  github_link: "https://github.com/martosaur/instructor_lite",
+  latest_version: "0.3.0"
+}
+```
+
+## Reasoning
+
+Reasoning models are powerful, but ultimately, reasoning doesn't affect structured output in any way. However, they can be very useful to keep track of _the reasoning_ behind the output. `InstructorLite.instruct/2` does not give you access to the raw output, but you can use lower-level functions to sidestep this.
+
+```elixir
+require Logger
+
+adventure_description = """
+Something strange is happening to your hometown of Willowshore! Nestled on the
+banks of a river winding through the legendary Specterwood in Tian Xia’s haunted
+land of Shenmen, the people of Willowshore are no strangers to supernatural
+threat, but the danger that comes to town on the first day of summer is unlike
+anything you’ve ever seen before. Over the four seasons to come, you and your
+fellow home-grown heroes must face evil spirits, sinister fiends, and
+frightening curses, lest the town of Willowshore succumb to the Season of
+Ghosts!
+"""
+
+opts = [
+  response_model: %{toponyms: {:array, :string}},
+  adapter_context: [api_key: secret_key]
+]
+
+params = InstructorLite.prepare_prompt(%{
+      model: "o4-mini",
+      reasoning: %{effort: "medium", summary: "auto"},
+      input: [
+        %{role: "system", content: "Here's an adventure description, please extract all toponyms"},
+        %{role: "user", content: adventure_description}
+      ]
+  }, opts)
+
+{:ok, response} = InstructorLite.Adapters.OpenAI.send_request(params, opts)
+{:ok, result} = InstructorLite.consume_response(response, params, opts)
+
+for %{"summary" => summaries} <- response["output"] do
+  for %{"type" => "summary_text", "text" => text} <- summaries do
+    Logger.info(text)
+  end
+end
+
+result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+13:34:05.078 [info] **Extracting toponyms**
+
+The user is interested in extracting all toponyms from a prompt about Willowshore. I’ll identify the place names, which include: Willowshore, Specterwood, Tian Xia, and Shenmen. Event names, like "the Season of Ghosts," aren't toponyms. The phrase "the banks of a river" doesn't name the river either. 
+
+I’ll ensure to include only unique entries, ultimately returning this list in a structured format as JSON: {"toponyms":["Willowshore","Specterwood","Tian Xia","Shenmen"]}.
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{toponyms: ["Willowshore", "Specterwood", "Tian Xia", "Shenmen"]}
+```
+
+<!-- livebook:{"offset":4852,"stamp":{"token":"XCP.s6WZuHcTI5hI4YuZjQtQOV488LZwjgSEUuzWaPfyGotNZM80UEAKeY3CtGTlJSggF1Az9UxZe39vhJ3HWk9mALIJeh6Db2bfSGIXrWsKTctJcdiAXA","version":2}} -->

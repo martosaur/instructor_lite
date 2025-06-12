@@ -53,7 +53,8 @@ defmodule InstructorLite.MixProject do
         "pages/cookbooks/vision.livemd",
         "pages/cookbooks/text-to-dataframes.livemd",
         "pages/cookbooks/batch-api.livemd",
-        "pages/cookbooks/custom-ollama-adapter.livemd"
+        "pages/cookbooks/custom-ollama-adapter.livemd",
+        "pages/cookbooks/openai-advanced-features.livemd"
       ],
       nest_modules_by_prefix: [InstructorLite.Adapters],
       groups_for_modules: [
