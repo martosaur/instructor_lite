@@ -85,7 +85,7 @@ prompts =
   |> Enum.map(fn text ->
     InstructorLite.prepare_prompt(%{
         model: "gpt-4o-mini",
-        messages: [%{
+        input: [%{
           role: "user",
           content: "Classify first paragraph of an email:\n#{text}"
         }]
@@ -98,7 +98,7 @@ prompts =
 jsonl =
   prompts
   |> Enum.map(fn {prompt, index} ->
-    Jason.encode!(%{custom_id: "#{index}", method: "POST", url: "/v1/chat/completions", body: prompt})
+    Jason.encode!(%{custom_id: "#{index}", method: "POST", url: "/v1/responses", body: prompt})
   end)
   |> Enum.join("\n")
 
@@ -120,7 +120,7 @@ mp_headers = [{"Content-Type", Multipart.content_type(multipart, "multipart/form
 
 {:ok, %{body: %{"id" => batch_id}}} =
   Req.post("https://api.openai.com/v1/batches",
-    json: %{input_file_id: file_id, endpoint: "/v1/chat/completions", completion_window: "24h"},
+    json: %{input_file_id: file_id, endpoint: "/v1/responses", completion_window: "24h"},
     headers: auth_headers
   )
 
@@ -156,14 +156,14 @@ result =
 
 ```
 [
-  ok: %SpamPrediction{class: :spam, reason: "Common spam trope of money scams", score: 0.95},
-  ok: %SpamPrediction{class: :spam, reason: "Threatening language and webcam mention", score: 0.95},
+  ok: %SpamPrediction{class: :spam, reason: "Typical scam offer from prince.", score: 0.95},
+  ok: %SpamPrediction{class: :spam, reason: "Suspicious webcam claim", score: 0.95},
   ok: %SpamPrediction{
     class: :not_spam,
-    reason: "Newsletter title suggests legitimate content",
-    score: 0.9
+    reason: "Newsletter content is not promotional",
+    score: 0.85
   }
 ]
 ```
 
-<!-- livebook:{"offset":4290,"stamp":{"token":"XCP.0u8LUVJewKQ1FRMqky47zdPB_1pX8-2jBURg4PqSfvs4FfION2QCgXQqSZgtky3XUOYUwm7Df4SUIudTHnVIr5h-HaK0mUMMj63NriP32u6GVhtTIA","version":2}} -->
+<!-- livebook:{"offset":4253,"stamp":{"token":"XCP._idhRxSiScwUoVVMHrkKP07iyaWcBpp0qsI6L46lHzCHDtaEkUXv1pNoHa1W18Cp2LGOw7x4R9EJlMQ97Zryy-5-OMQ65Mru-brPSwWE3ofEEgX_oA","version":2}} -->

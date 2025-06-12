@@ -120,7 +120,7 @@ Perfect. And now let's test it out on some example text.
 extract_df = fn text ->
   InstructorLite.instruct(%{
       model: "gpt-4o-mini",
-      messages: [
+      input: [
         %{
           role: "system",
           content: """
@@ -159,4 +159,4 @@ Kino.Layout.tabs(
 )
 ```
 
-<!-- livebook:{"offset":4583,"stamp":{"token":"XCP.xSeGz27KbDBtRKp3G_PZKpeEJWeiZtuV7WEgJv3LyA1qiE1lqhNSlcksitBtnvXCxZ8625YEHbHd-sbiAXRsh6gsXIIsnVhD4JjQfFD_Wh8o-1AAvQ","version":2}} -->
+<!-- livebook:{"offset":4584,"stamp":{"token":"XCP.Q2Z-FmkgAonxmyIqoldwCJ6FVZEZjMt07JUB5ZF2sx2tqhP2RpNipmNf5d1KS-RUSMkh9NQpqt-0jEz3WrKkji0QsQ1KPemSLbwLgVcYQ-aWuaQufg","version":2}} -->
