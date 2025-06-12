@@ -86,7 +86,7 @@ defmodule InstructorLite do
 
   ```
   iex> InstructorLite.instruct(%{
-      messages: [
+      input: [
         %{role: "user", content: "John Doe is fourty two years old"}
       ]
     },
@@ -172,7 +172,7 @@ defmodule InstructorLite do
   end
 
   InstructorLite.instruct(%{
-      messages: [
+      input: [
         %{role: "user", content: "Take the last word from the following line and add some rhymes to it\nEven though you broke my heart"}
       ]
     },
