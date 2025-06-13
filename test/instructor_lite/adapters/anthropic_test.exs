@@ -17,10 +17,11 @@ defmodule InstructorLite.Adapters.AnthropicTest do
                  model: "claude-3-5-sonnet-20240620",
                  max_tokens: 1024,
                  system: """
-                 As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
-
+                 You're called by an Elixir application through the InstructorLite library. \
+                 Your task is to understand what the application wants you to do and respond with JSON output that matches the schema. \
+                 The output will be validated by the application against an Ecto schema and potentially some custom rules. \
+                 You may be asked to adjust your response if it doesn't pass validation. \
                  Additional notes on the schema:
-
                  Explanation
                  """,
                  tool_choice: %{name: "Schema", type: "tool"},
@@ -72,7 +73,7 @@ defmodule InstructorLite.Adapters.AnthropicTest do
                        is_error: true,
                        tool_use_id: "toolu_01BjqsjAhY8W4PRFXWRMWbnm",
                        content: """
-                       Validation failed. Please try again and fix following validation errors
+                       The response did not pass validation. Please try again and fix the following validation errors:
 
                        list of errors
                        """

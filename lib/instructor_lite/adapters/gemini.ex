@@ -105,25 +105,7 @@ defmodule InstructorLite.Adapters.Gemini do
   """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
-    mandatory_part = """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
-    """
-
-    optional_notes =
-      if notes = opts[:notes] do
-        """
-        Additional notes on the schema:\n
-        #{notes}
-        """
-      else
-        ""
-      end
-
-    sys_instruction = %{
-      parts: [
-        %{text: mandatory_part <> optional_notes}
-      ]
-    }
+    sys_instruction = %{parts: [%{text: InstructorLite.Prompt.prompt(opts)}]}
 
     generation_config = %{
       responseMimeType: "application/json",
@@ -146,15 +128,7 @@ defmodule InstructorLite.Adapters.Gemini do
       %{role: "model", parts: [%{text: InstructorLite.JSON.encode!(resp_params)}]},
       %{
         role: "user",
-        parts: [
-          %{
-            text: """
-            The response did not pass validation. Please try again and fix the following validation errors:\n
-
-            #{errors}
-            """
-          }
-        ]
+        parts: [%{text: InstructorLite.Prompt.validation_failed(errors)}]
       }
     ]
 

@@ -200,6 +200,7 @@ defmodule InstructorLite.Integration.OpenAITest do
         InstructorLite.instruct(
           %{
             model: "o4-mini",
+            reasoning: %{effort: "high", summary: "auto"},
             input: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ]
@@ -412,6 +413,7 @@ defmodule InstructorLite.Integration.OpenAITest do
         InstructorLite.instruct(
           %{
             model: "o4-mini",
+            reasoning_effort: "medium",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ]

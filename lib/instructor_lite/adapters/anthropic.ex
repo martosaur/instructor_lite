@@ -96,24 +96,10 @@ defmodule InstructorLite.Adapters.Anthropic do
   """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
-    mandatory_part = """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
-    """
-
-    optional_notes =
-      if notes = opts[:notes] do
-        """
-        Additional notes on the schema:\n
-        #{notes}
-        """
-      else
-        ""
-      end
-
     params
     |> Map.put_new(:model, @default_model)
     |> Map.put_new(:max_tokens, @default_max_tokens)
-    |> Map.put_new(:system, mandatory_part <> optional_notes)
+    |> Map.put_new(:system, InstructorLite.Prompt.prompt(opts))
     |> Map.put_new(:tool_choice, %{type: "tool", name: "Schema"})
     |> Map.put_new(:tools, [
       %{
@@ -144,11 +130,7 @@ defmodule InstructorLite.Adapters.Anthropic do
             type: "tool_result",
             tool_use_id: tool_use_id,
             is_error: true,
-            content: """
-            Validation failed. Please try again and fix following validation errors
-
-            #{errors}
-            """
+            content: InstructorLite.Prompt.validation_failed(errors)
           }
         ]
       }

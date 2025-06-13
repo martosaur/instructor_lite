@@ -83,24 +83,10 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatible do
   """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
-    mandatory_part = """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
-    """
-
-    optional_notes =
-      if notes = opts[:notes] do
-        """
-        Additional notes on the schema:\n
-        #{notes}
-        """
-      else
-        ""
-      end
-
     sys_message = [
       %{
         role: "system",
-        content: mandatory_part <> optional_notes
+        content: InstructorLite.Prompt.prompt(opts)
       }
     ]
 
@@ -126,11 +112,7 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatible do
       %{role: "assistant", content: InstructorLite.JSON.encode!(resp_params)},
       %{
         role: "system",
-        content: """
-        The response did not pass validation. Please try again and fix the following validation errors:\n
-
-        #{errors}
-        """
+        content: InstructorLite.Prompt.validation_failed(errors)
       }
     ]
 

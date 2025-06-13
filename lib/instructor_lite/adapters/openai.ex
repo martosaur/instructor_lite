@@ -86,20 +86,6 @@ defmodule InstructorLite.Adapters.OpenAI do
   """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
-    mandatory_part = """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
-    """
-
-    optional_notes =
-      if notes = opts[:notes] do
-        """
-        Additional notes on the schema:\n
-        #{notes}
-        """
-      else
-        ""
-      end
-
     params
     |> Map.put_new(:model, @default_model)
     |> Map.put_new(:text, %{
@@ -110,7 +96,7 @@ defmodule InstructorLite.Adapters.OpenAI do
         schema: Keyword.fetch!(opts, :json_schema)
       }
     })
-    |> Map.put_new(:instructions, mandatory_part <> optional_notes)
+    |> Map.put_new(:instructions, InstructorLite.Prompt.prompt(opts))
   end
 
   @doc """
@@ -127,11 +113,7 @@ defmodule InstructorLite.Adapters.OpenAI do
     do_better = [
       %{
         role: "system",
-        content: """
-        The response did not pass validation. Please try again and fix the following validation errors:\n
-
-        #{errors}
-        """
+        content: InstructorLite.Prompt.validation_failed(errors)
       }
     ]
 
