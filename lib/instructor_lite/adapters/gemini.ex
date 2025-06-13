@@ -172,8 +172,12 @@ defmodule InstructorLite.Adapters.Gemini do
   @impl InstructorLite.Adapter
   def parse_response(response, _opts) do
     case response do
-      %{"candidates" => [%{"content" => %{"parts" => [%{"text" => text}]}}]} ->
-        InstructorLite.JSON.decode(text)
+      %{"candidates" => [%{"content" => %{"parts" => parts}}]} ->
+        Enum.find_value(parts, {:error, :unexpected_response, response}, fn
+          %{"thought" => true} -> false
+          %{"text" => text} -> InstructorLite.JSON.decode(text)
+          _ -> false
+        end)
 
       %{"promptFeedback" => %{"blockReason" => _} = reason} ->
         {:error, :refusal, reason}
