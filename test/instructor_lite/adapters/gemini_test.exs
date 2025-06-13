@@ -194,6 +194,56 @@ defmodule InstructorLite.Adapters.GeminiTest do
       assert {:error, :unexpected_response, "Internal Server Error"} =
                Gemini.parse_response(response, [])
     end
+
+    test "with reasoning summary" do
+      response = %{
+        "candidates" => [
+          %{
+            "avgLogprobs" => -0.0510383415222168,
+            "content" => %{
+              "parts" => [
+                %{
+                  "text" =>
+                    "**Crafting the Response**\n\nOkay, so the user has a straightforward factual question. They want to know the name and birthdate of the first US president, and they expect a JSON object as the answer. That's no problem. I need to deliver on this.\n\nFirst, I need to make sure I understand the requirements fully. The schema dictates the properties: `birth_date` and `name`, both strings.  Easy enough.  Now, the user's question is essentially, \"What's the right JSON for the first US President?\"\n\nThe answer to the question is George Washington. That part's locked in.  Now, I need to get the `birth_date`. I remember that he was born on February 22, 1732.  \n\nPutting that all together, I can construct the following JSON object, which should satisfy the requirements:\n\n```json\n{\n  \"birth_date\": \"1732-02-22\",\n  \"name\": \"George Washington\"\n}\n```\n\nThis should be a perfectly correct and adequate response. I'm ready to send it.\n",
+                  "thought" => true
+                },
+                %{
+                  "text" => "{\"birth_date\": \"1732-02-22\", \"name\": \"George Washington\"}"
+                }
+              ],
+              "role" => "model"
+            },
+            "finishReason" => "STOP",
+            "safetyRatings" => [
+              %{
+                "category" => "HARM_CATEGORY_HATE_SPEECH",
+                "probability" => "NEGLIGIBLE"
+              },
+              %{
+                "category" => "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "probability" => "NEGLIGIBLE"
+              },
+              %{
+                "category" => "HARM_CATEGORY_HARASSMENT",
+                "probability" => "NEGLIGIBLE"
+              },
+              %{
+                "category" => "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "probability" => "NEGLIGIBLE"
+              }
+            ]
+          }
+        ],
+        "usageMetadata" => %{
+          "candidatesTokenCount" => 25,
+          "promptTokenCount" => 34,
+          "totalTokenCount" => 59
+        }
+      }
+
+      assert {:ok, %{"birth_date" => "1732-02-22", "name" => "George Washington"}} =
+               Gemini.parse_response(response, [])
+    end
   end
 
   describe "send_request/2" do
