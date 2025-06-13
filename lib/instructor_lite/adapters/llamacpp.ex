@@ -101,7 +101,7 @@ defmodule InstructorLite.Adapters.Llamacpp do
     do_better = """
     Your previous response:
 
-    #{Jason.encode!(resp_params)}
+    #{InstructorLite.JSON.encode!(resp_params)}
 
     did not pass validation. Please try again and fix following validation errors:\n
     #{errors}
@@ -124,7 +124,7 @@ defmodule InstructorLite.Adapters.Llamacpp do
   def parse_response(response, _opts) do
     case response do
       %{"content" => json} ->
-        Jason.decode(json)
+        InstructorLite.JSON.decode(json)
 
       other ->
         {:error, :unexpected_response, other}

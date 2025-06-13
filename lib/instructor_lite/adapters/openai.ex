@@ -144,7 +144,10 @@ defmodule InstructorLite.Adapters.OpenAI do
 
       _ ->
         Map.update!(params, :input, fn input ->
-          assistant_response = %{role: "assistant", content: Jason.encode!(resp_params)}
+          assistant_response = %{
+            role: "assistant",
+            content: InstructorLite.JSON.encode!(resp_params)
+          }
 
           if is_binary(input) do
             [%{role: "user", content: input}, assistant_response | do_better]
@@ -169,7 +172,7 @@ defmodule InstructorLite.Adapters.OpenAI do
       %{"output" => output} ->
         Enum.find_value(output, {:error, :unexpected_response, response}, fn
           %{"role" => "assistant", "content" => [%{"text" => text}]} ->
-            Jason.decode(text)
+            InstructorLite.JSON.decode(text)
 
           %{"role" => "assistant", "content" => [%{"refusal" => reason}]} ->
             {:error, :refusal, reason}

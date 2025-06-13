@@ -143,7 +143,7 @@ defmodule InstructorLite.Adapters.Gemini do
   @impl InstructorLite.Adapter
   def retry_prompt(params, resp_params, errors, _response, _opts) do
     do_better = [
-      %{role: "model", parts: [%{text: Jason.encode!(resp_params)}]},
+      %{role: "model", parts: [%{text: InstructorLite.JSON.encode!(resp_params)}]},
       %{
         role: "user",
         parts: [
@@ -173,7 +173,7 @@ defmodule InstructorLite.Adapters.Gemini do
   def parse_response(response, _opts) do
     case response do
       %{"candidates" => [%{"content" => %{"parts" => [%{"text" => text}]}}]} ->
-        Jason.decode(text)
+        InstructorLite.JSON.decode(text)
 
       %{"promptFeedback" => %{"blockReason" => _} = reason} ->
         {:error, :refusal, reason}

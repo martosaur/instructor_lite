@@ -55,7 +55,7 @@ defmodule InstructorLite.Adapters.LlamacppTest do
     test "invalid json" do
       response = %{"content" => "{{"}
 
-      assert {:error, %Jason.DecodeError{}} = Llamacpp.parse_response(response, [])
+      assert {:error, _} = Llamacpp.parse_response(response, [])
     end
 
     test "unexpected content" do

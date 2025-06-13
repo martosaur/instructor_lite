@@ -169,7 +169,7 @@ defmodule InstructorLite.Adapters.GeminiTest do
         }
       }
 
-      assert {:error, %Jason.DecodeError{}} = Gemini.parse_response(response, [])
+      assert {:error, _} = Gemini.parse_response(response, [])
     end
 
     test "returns refusal" do

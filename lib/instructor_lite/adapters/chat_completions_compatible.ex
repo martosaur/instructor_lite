@@ -123,7 +123,7 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatible do
   @impl InstructorLite.Adapter
   def retry_prompt(params, resp_params, errors, _response, _opts) do
     do_better = [
-      %{role: "assistant", content: Jason.encode!(resp_params)},
+      %{role: "assistant", content: InstructorLite.JSON.encode!(resp_params)},
       %{
         role: "system",
         content: """
@@ -149,7 +149,7 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatible do
   def parse_response(response, _opts) do
     case response do
       %{"choices" => [%{"message" => %{"content" => json, "refusal" => nil}}]} ->
-        Jason.decode(json)
+        InstructorLite.JSON.decode(json)
 
       %{"choices" => [%{"message" => %{"refusal" => refusal}}]} ->
         {:error, :refusal, refusal}

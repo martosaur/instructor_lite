@@ -81,7 +81,7 @@ defmodule InstructorLite.MixProject do
   defp deps do
     [
       {:ecto, "~> 3.12"},
-      {:jason, "~> 1.4"},
+      {:jason, "~> 1.4", optiona: true},
       {:req, "~> 0.5 or ~> 1.0", optional: true},
       {:nimble_options, "~> 1.1"},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
