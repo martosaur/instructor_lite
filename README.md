@@ -161,12 +161,13 @@ def deps do
 end
 ```
 
-Optionally, include `m:Req` HTTP client as it's used by default:
+Optionally, include `Req` HTTP client (used by default) and Jason (for Elixir older than 1.18):
 
 ```elixir
 def deps do
   [
-    {:req, "~> 0.5 or ~> 1.0"}
+    {:req, "~> 0.5 or ~> 1.0"},
+    {:jason, "~> 1.4"}
   ]
 end
 ```

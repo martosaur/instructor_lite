@@ -107,7 +107,7 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatibleTest do
         "object" => "chat.completion"
       }
 
-      assert {:error, %Jason.DecodeError{}} =
+      assert {:error, _} =
                ChatCompletionsCompatible.parse_response(response, [])
     end
 

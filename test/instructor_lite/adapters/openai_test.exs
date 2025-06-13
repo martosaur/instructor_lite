@@ -183,7 +183,7 @@ defmodule InstructorLite.Adapters.OpenAITest do
         "store" => true
       }
 
-      assert {:error, %Jason.DecodeError{}} = OpenAI.parse_response(response, [])
+      assert {:error, _} = OpenAI.parse_response(response, [])
     end
 
     test "returns refusal" do
