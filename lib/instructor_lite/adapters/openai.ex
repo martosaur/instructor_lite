@@ -110,7 +110,7 @@ defmodule InstructorLite.Adapters.OpenAI do
         schema: Keyword.fetch!(opts, :json_schema)
       }
     })
-    |> Map.put(:instructions, mandatory_part <> optional_notes)
+    |> Map.put_new(:instructions, mandatory_part <> optional_notes)
   end
 
   @doc """
