@@ -14,9 +14,11 @@ defmodule InstructorLite.Adapters.OpenAITest do
 
       assert OpenAI.initial_prompt(params, json_schema: :json_schema, notes: "Explanation") == %{
                instructions: """
-               As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema
+               You're called by an Elixir application through the InstructorLite library. \
+               Your task is to understand what the application wants you to do and respond with JSON output that matches the schema. \
+               The output will be validated by the application against an Ecto schema and potentially some custom rules. \
+               You may be asked to adjust your response if it doesn't pass validation. \
                Additional notes on the schema:
-
                Explanation
                """,
                model: "gpt-4o-mini",
@@ -43,7 +45,7 @@ defmodule InstructorLite.Adapters.OpenAITest do
                    %{
                      role: "system",
                      content:
-                       "The response did not pass validation. Please try again and fix the following validation errors:\n\n\nlist of errors\n"
+                       "The response did not pass validation. Please try again and fix the following validation errors:\n\nlist of errors\n"
                    }
                  ],
                  model: "gpt-4o-mini",
@@ -66,7 +68,7 @@ defmodule InstructorLite.Adapters.OpenAITest do
                    %{
                      role: "system",
                      content:
-                       "The response did not pass validation. Please try again and fix the following validation errors:\n\n\nlist of errors\n"
+                       "The response did not pass validation. Please try again and fix the following validation errors:\n\nlist of errors\n"
                    }
                  ],
                  model: "gpt-4o-mini",
@@ -88,7 +90,7 @@ defmodule InstructorLite.Adapters.OpenAITest do
                  %{
                    role: "system",
                    content:
-                     "The response did not pass validation. Please try again and fix the following validation errors:\n\n\nlist of errors\n"
+                     "The response did not pass validation. Please try again and fix the following validation errors:\n\nlist of errors\n"
                  }
                ],
                previous_response_id: "id123",

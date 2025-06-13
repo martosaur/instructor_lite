@@ -73,24 +73,9 @@ defmodule InstructorLite.Adapters.Llamacpp do
   """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
-    mandatory_part = """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
-    """
-
-    optional_notes =
-      if notes = opts[:notes] do
-        """
-        Additional notes on the schema:
-
-        #{notes}
-        """
-      else
-        ""
-      end
-
     params
     |> Map.put_new(:json_schema, Keyword.fetch!(opts, :json_schema))
-    |> Map.put_new(:system_prompt, mandatory_part <> optional_notes)
+    |> Map.put_new(:system_prompt, InstructorLite.Prompt.prompt(opts))
   end
 
   @doc """
