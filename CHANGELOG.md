@@ -1,12 +1,15 @@
 # Changelog
 
-## Unreleased
+## v1.0.0
   * OpenAI adapter is changed to use the
   [Responses](https://platform.openai.com/docs/api-reference/responses) API.
   The chat completions-based adapter is still available as
   `InstructorLite.Adapters.ChatCompletionsCompatible`
+  * `Jason` dependency is now optional
+  * All adapters have been tested and verified for compatibility with reasoning models
+  * Default prompts have been refined and standardized across adapters
   
-### Migrating to Unreleased
+### Migrating to 1.0.0
   1. If you use the `OpenAI` adapter and want to continue using the chat completions endpoint, switch to the `ChatCompletionsCompatible` adapter:
   ```diff
   InstructorLite.instruct(%{
