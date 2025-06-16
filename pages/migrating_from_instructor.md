@@ -6,6 +6,7 @@
 * You need more customization (e.g. using `Tesla` instead of `Req`)
 * You want to have fine-grained control over side-effects (e.g. delay executing requests to use [Batch API](https://platform.openai.com/docs/guides/batch))
 * You plan to tinker with the library's source code or write your own adapters
+* You've run into issues and and are on the path to your own fork
 
 ❌ You might not want to switch if:
 * Instructor already works for you and you want things to continue to "just work"
@@ -15,7 +16,7 @@
 
 Instructor works with any Ecto schema and optionally allows you to use `Instructor.Validator` behaviour for the `Instructor.Validator.validate_changeset/2` callback.
 
-InstructorLite can also work with any Ecto schema, but it doesn't use the `@doc` attribute for semantic description. Instead, you can `use InstructorLite.Instruction` and define the `@notes` attribute. The `c:InstructorLite.Instruction.validate_changeset/2` callback is still here, but it's always of 2 arity.
+InstructorLite can also work with any Ecto schema, but it doesn't use the `@doc` attribute for semantic description. Instead, you can `use InstructorLite.Instruction` and define the `@notes` attribute. The `c:InstructorLite.Instruction.validate_changeset/2` callback is still here, but it's always of arity 2.
 
 As a result, you don't have to add a docstring in your release.
 
@@ -99,9 +100,9 @@ end
 
 ## Migrating `Instructor.chat_completions/2`
 
-`Instructor.chat_completion/2` works primarily with `params`, but also accepts an optional `config` as the second argument. Some parameters are passed to the LLM and some control Instructor's own behaviour.
+`Instructor.chat_completion/2` works primarily with `params`, but also accepts an optional `config` as the second argument. Some parameters are passed to the LLM and some control Instructor's own behavior.
 
-The InstructorLite equivalent function is `InstructorLite.instruct/2`. It also accepts `params` as the first argument, but many params were moved to the second `opts` argument. Read more about this in [Key Concepts](`m:InstructorLite#key-concepts`). 
+The InstructorLite equivalent function is `InstructorLite.instruct/2`. It also accepts `params` as the first argument, but many params were moved to the second `opts` argument. Read more about this in [Key Concepts](`m:InstructorLite#key-concepts`).
 
 In addition, InstructorLite does not access application configuration, so API keys are typically passed through `opts`.
 
@@ -135,18 +136,18 @@ config :instructor,
 
 ```elixir
 InstructorLite.instruct(%{
-    messages: [
+    input: [
       %{
         role: "user",
         content: "Classify the following text: Hello, I am a Nigerian prince and I would like to give you $1,000,000."
       }
     ],
-    model: "gpt-3.5-turbo"
+    model: "gpt-4o-mini"
   },
-  response_model: Instructor.Demos.SpamPrediction,
+  response_model: SpamPrediction,
   adapter: InstructorLite.Adapters.OpenAI,
   adapter_context: [api_key: "my_secret_key"]
-})
+)
 {:ok, %SpamPrediction{class: :spam, score: 0.999}}
 ```
 
@@ -337,7 +338,7 @@ defmodule QuestionAnswer do
   def validate_with_llm(changeset, field, rule) do
     Ecto.Changeset.validate_change(changeset, field, fn ^field, value ->
       %{
-        messages: [
+        input: [
           %{
             role: "system",
             content: """
@@ -388,4 +389,4 @@ end
 
 Instructor's Llamacpp was implemented through converting JSON schema to GBNF grammar.
 
-InstructorLite offers a very basic LLamacpp adapter which passes JSON schema to the Llamacpp server. If you want to use Llamacpp with InstructorLite, you will likely need to learn how your model of choice works and write your own adapter. InstructorLite can offer you a flexible enough chassis to build upon, but doesn't have much expertise to share 🫡.
+InstructorLite offers a very basic Llamacpp adapter which passes JSON schema to the Llamacpp server. If you want to use Llamacpp with InstructorLite, you will likely need to learn how your model of choice works and write your own adapter. InstructorLite can offer you a flexible enough chassis to build upon, but doesn't have much expertise to share 🫡.

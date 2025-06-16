@@ -1,13 +1,13 @@
 # Changelog
 
 ## Unreleased
-  * OpenAI adapter is changed to use
+  * OpenAI adapter is changed to use the
   [Responses](https://platform.openai.com/docs/api-reference/responses) API.
-  Chat completions-based adapter is still available as
+  The chat completions-based adapter is still available as
   `InstructorLite.Adapters.ChatCompletionsCompatible`
   
 ### Migrating to Unreleased
-  1. If you use `OpenAI` adapter and want to continue using chat completions endpoint, switch to `ChatCompletionsCompatible` adapter:
+  1. If you use the `OpenAI` adapter and want to continue using the chat completions endpoint, switch to the `ChatCompletionsCompatible` adapter:
   ```diff
   InstructorLite.instruct(%{
       messages: [
@@ -20,7 +20,7 @@
     adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :openai_key)]
   )
   ```
-  1. If you use `OpenAI` adapter and want to switch to responses endpoint, update `params` to comply with [`POST /v1/responses`](https://platform.openai.com/docs/api-reference/responses/create) interface. Most notably, `messages` key should be `input`:
+  2. If you use the `OpenAI` adapter and want to switch to the responses endpoint, update `params` to comply with the [`POST /v1/responses`](https://platform.openai.com/docs/api-reference/responses/create) interface. Most notably, the `messages` key should be `input`:
   ```diff
   InstructorLite.instruct(%{
   -    messages: [
@@ -40,7 +40,7 @@
 
 ## v0.2.0
   
-  * [OpenAI] Do not overwrite `response_format` params key if provided by user
+  * [OpenAI] Do not overwrite `response_format` params key if provided by the user
   * Fix `consume_response/3` enforcing all keys to present for ad-hoc Ecto schemas
   * Add Local Development Guide
 

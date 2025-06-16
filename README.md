@@ -6,7 +6,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/martosaur/instructor_lite.svg)](https://github.com/martosaur/instructor_lite/stargazers)
 [![CI](https://github.com/martosaur/instructor_lite/actions/workflows/ci.yml/badge.svg)](https://github.com/martosaur/instructor_lite/actions/workflows/ci.yml)
 
-Structured prompting for LLMs. InstructorLite is a fork and spiritual successor to [instructor_ex](https://github.com/thmsmlr/instructor_ex) library, which is the Elixir member of the great [Instructor](https://useinstructor.com/) family.
+Structured prompting for LLMs. InstructorLite is a fork, spiritual successor and almost an entire rewrite of [instructor_ex](https://github.com/thmsmlr/instructor_ex) library.
  
 The Instructor is useful for coaxing an LLM to return JSON that maps to an Ecto schema that you provide, rather than the default unstructured text output. If you define your own validation logic, Instructor can automatically retry prompts when validation fails (returning natural language error messages to the LLM, to guide it when making corrections).
 
@@ -26,7 +26,7 @@ InstructorLite is tested to be compatible with the following providers:
 ## Features
 
 InstructorLite can be boiled down to these features:
-1. It provides a very simple function for generating JSON-schema from Ecto schema.
+1. It provides a very simple function for generating JSON schema from Ecto schema.
 2. It facilitates generating prompts, calling LLMs, casting and validating responses, including retrying prompts when validation fails.
 3. It holds knowledge of major LLM providers' API interfaces with adapters.
 
@@ -58,7 +58,7 @@ Now let's use `InstructorLite.instruct/2` to fill the schema from unstructured t
 ```elixir
 iex> InstructorLite.instruct(%{
     input: [
-      %{role: "user", content: "John Doe is fourty two years old"}
+      %{role: "user", content: "John Doe is forty-two years old"}
     ]
   },
   response_model: UserInfo,
@@ -72,7 +72,7 @@ iex> InstructorLite.instruct(%{
 ```elixir
 iex> InstructorLite.instruct(%{
     messages: [
-      %{role: "user", content: "John Doe is fourty two years old"}
+      %{role: "user", content: "John Doe is forty-two years old"}
     ]
   },
   response_model: UserInfo,
@@ -86,7 +86,7 @@ iex> InstructorLite.instruct(%{
 
 ```elixir
 iex> InstructorLite.instruct(%{
-    prompt: "John Doe is fourty two years old"
+    prompt: "John Doe is forty-two years old"
   },
   response_model: UserInfo,
   adapter: InstructorLite.Adapters.Llamacpp,
@@ -102,7 +102,7 @@ iex> InstructorLite.instruct(%{
     contents: [
       %{
         role: "user",
-        parts: [%{text: "John Doe is fourty two years old"}]
+        parts: [%{text: "John Doe is forty-two years old"}]
       }
     ]
   },
@@ -122,14 +122,14 @@ iex> InstructorLite.instruct(%{
 
 ### Grok
 
-Grok API is compatible with OpenAI Chat Completions endpoint, so all we can use
-`ChatCompletionsCompatible` adapter with grok's `url` and `model_name`
+Grok API is compatible with OpenAI Chat Completions endpoint, so we can use
+the `ChatCompletionsCompatible` adapter with Grok's `url` and `model_name`
 
 ```elixir
 iex> InstructorLite.instruct(%{
     model: "grok-3-latest",
     messages: [
-      %{role: "user", content: "John Doe is fourty two years old"}
+      %{role: "user", content: "John Doe is forty-two years old"}
     ]
   },
   response_model: UserInfo,
@@ -146,7 +146,7 @@ iex> InstructorLite.instruct(%{
 
 ## Configuration
 
-InstructorLite _does not_ access the application environment for configuration options like adapter or api key. Instead, they're passed as options when needed. Note that different adapters may require different options, so make sure to check their documentation. 
+InstructorLite _does not_ access the application environment for configuration options like adapter or API key. Instead, they're passed as options when needed. Note that different adapters may require different options, so make sure to check their documentation.
 
 
 ## Installation

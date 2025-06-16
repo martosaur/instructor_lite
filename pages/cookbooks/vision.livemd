@@ -14,13 +14,13 @@ Mix.install(
 
 ## Motivation
 
-In recent months, the latest AI researcher labs have turned LLMs into multimodal models. What this means is that no longer do they just interpret text, but they can also interpret images. One example of this provided by Anthropic is the Clause 3.5 Sonnet model. With no extra work, you can now provide images into your prompts with instructor and still do the normal structured extractions that you're used to.
+In recent months, the latest AI research labs have turned LLMs into multimodal models. What this means is that they no longer just interpret text, but they can also interpret images. One example of this provided by Anthropic is the Claude 3.5 Sonnet model. With no extra work, you can now provide images into your prompts with Instructor and still do the normal structured extractions that you're used to.
 
 In the following example, we will extract product details from a screenshot of a Shopify store.
 
 ## Setup
 
-In order to run code in this notebook, you need to add your Anthropic API key as an `OPENAI_KEY` Livebook secret. It will then be accessible through an environmental variable.
+In order to run code in this notebook, you need to add your Anthropic API key as an `ANTHROPIC_KEY` Livebook secret. It will then be accessible through an environment variable.
 
 ```elixir
 secret_key = System.fetch_env!("LB_ANTHROPIC_KEY")

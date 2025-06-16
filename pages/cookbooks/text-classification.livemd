@@ -13,7 +13,7 @@ Mix.install(
 
 ## Motivation
 
-Text classification is a common task in NLP and broadly applicable across software. Whether it be spam detection, or support ticket categorization, NLP is at the core. Historically, this required training custom, bespoke models that required collecting thousands of pre-labeled examples. With LLMs a lot of this knowledge is already encoded into the model. With proper instruction and guiding the output to a known set of classifications using GPT you can be up and running with a text classification model in no time.
+Text classification is a common task in NLP and broadly applicable across software. Whether it be spam detection or support ticket categorization, NLP is at the core. Historically, this required training custom, bespoke models that required collecting thousands of pre-labeled examples. With LLMs, a lot of this knowledge is already encoded into the model. With proper instruction and guiding the output to a known set of classifications using GPT, you can be up and running with a text classification model in no time.
 
 Hell, you can even use instructor to help generate the training set to train your own more efficient model. But let's not get ahead of ourselves, there's more on that later in the tutorials.
 
@@ -110,7 +110,7 @@ defmodule EmailClassifications do
   @notes """
   A classification of a customer support email.
 
-  technical_issue - whether the user is having trouble accessing their account.
+  technical_issue - whether the user is having trouble accessing their account
   billing_issue - whether the customer is having trouble managing their billing or credit card
   general_inquiry - all other issues
   """

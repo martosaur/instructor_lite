@@ -46,7 +46,6 @@ defmodule InstructorLite.MixProject do
       extras: [
         "README.md",
         "CHANGELOG.md",
-        "pages/philosophy.md",
         "pages/migrating_from_instructor.md",
         "pages/local_development_guide.md",
         "pages/cookbooks/text-classification.livemd",
