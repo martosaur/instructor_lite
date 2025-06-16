@@ -70,28 +70,11 @@ Fast forward, after reading [the model card](https://ollama.com/library/llama3.1
 ```elixir
 defmodule OllamaAdapterInitialPrompt do
   def initial_prompt(params, opts) do
-    # We definitely need to instruct model to adhere to the schema
-    mandatory_part = """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
-    """
-
-    # If optional notes provided, we attach them as well
-    optional_notes =
-      if notes = opts[:notes] do
-        """
-        Additional notes on the schema:
-
-        #{notes}
-        """
-      else
-        ""
-      end
-
     # This prompt will be a message with a "system" role
     sys_message = [
       %{
         role: "system",
-        content: mandatory_part <> optional_notes
+        content: InstructorLite.Prompt.prompt(opts)
       }
     ]
 
@@ -120,7 +103,7 @@ end
 <!-- livebook:{"output":true} -->
 
 ```
-{:module, OllamaAdapterInitialPrompt, <<70, 79, 82, 49, 0, 0, 13, ...>>, {:initial_prompt, 2}}
+{:module, OllamaAdapterInitialPrompt, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:initial_prompt, 2}}
 ```
 
 At this point, we can actually try to combine both callbacks and see if we can get a response.
@@ -138,10 +121,10 @@ prompt = OllamaAdapterInitialPrompt.initial_prompt(%{messages: [
 %{
   messages: [
     %{
-      content: "As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n\n",
-      role: "system"
+      role: "system",
+      content: "You're called by an Elixir application through the InstructorLite library. Your task is to understand what the application wants you to do and respond with JSON output that matches the schema. The output will be validated by the application against an Ecto schema and potentially some custom rules. You may be asked to adjust your response if it doesn't pass validation. "
     },
-    %{content: "Who was the first president of the united states?", role: "user"}
+    %{role: "user", content: "Who was the first president of the united states?"}
   ],
   stream: false,
   tools: [
@@ -153,8 +136,8 @@ prompt = OllamaAdapterInitialPrompt.initial_prompt(%{messages: [
           type: "object",
           title: "root",
           required: [:name],
-          properties: %{name: %{type: "string"}},
-          additionalProperties: false
+          additionalProperties: false,
+          properties: %{name: %{type: "string"}}
         }
       },
       type: "function"
@@ -174,12 +157,12 @@ url = "http://localhost:11434/api/chat"
 ```
 {:ok,
  %{
-   "created_at" => "2024-09-14T19:41:26.286348Z",
+   "created_at" => "2025-06-16T16:37:25.172062Z",
    "done" => true,
    "done_reason" => "stop",
    "eval_count" => 17,
-   "eval_duration" => 1385711000,
-   "load_duration" => 28585542,
+   "eval_duration" => 1411956916,
+   "load_duration" => 36709250,
    "message" => %{
      "content" => "",
      "role" => "assistant",
@@ -188,9 +171,9 @@ url = "http://localhost:11434/api/chat"
      ]
    },
    "model" => "llama3.1",
-   "prompt_eval_count" => 195,
-   "prompt_eval_duration" => 3255144000,
-   "total_duration" => 4671528459
+   "prompt_eval_count" => 243,
+   "prompt_eval_duration" => 4897901084,
+   "total_duration" => 6350061833
  }}
 ```
 
@@ -247,11 +230,7 @@ defmodule OllamaAdapterRetryPrompt do
       %{
         # Ollama has a `tool` message role which we are going to use
         role: "tool",
-        content: """
-        Validation failed. Please try again and fix following validation errors
-
-        #{errors}
-        """
+        content: InstructorLite.Prompt.validation_failed(errors)
       }
     ]
 
@@ -268,10 +247,10 @@ retry_prompt = OllamaAdapterRetryPrompt.retry_prompt(prompt, nil, errors, respon
 %{
   messages: [
     %{
-      content: "As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n\n",
-      role: "system"
+      role: "system",
+      content: "You're called by an Elixir application through the InstructorLite library. Your task is to understand what the application wants you to do and respond with JSON output that matches the schema. The output will be validated by the application against an Ecto schema and potentially some custom rules. You may be asked to adjust your response if it doesn't pass validation. "
     },
-    %{content: "Who was the first president of the united states?", role: "user"},
+    %{role: "user", content: "Who was the first president of the united states?"},
     %{
       "content" => "",
       "role" => "assistant",
@@ -280,8 +259,8 @@ retry_prompt = OllamaAdapterRetryPrompt.retry_prompt(prompt, nil, errors, respon
       ]
     },
     %{
-      content: "Validation failed. Please try again and fix following validation errors\n\nname - is invalid\n",
-      role: "tool"
+      role: "tool",
+      content: "The response did not pass validation. Please try again and fix the following validation errors:\n\nname - is invalid\n"
     }
   ],
   stream: false,
@@ -294,8 +273,8 @@ retry_prompt = OllamaAdapterRetryPrompt.retry_prompt(prompt, nil, errors, respon
           type: "object",
           title: "root",
           required: [:name],
-          properties: %{name: %{type: "string"}},
-          additionalProperties: false
+          additionalProperties: false,
+          properties: %{name: %{type: "string"}}
         }
       },
       type: "function"
@@ -328,25 +307,10 @@ defmodule OllamaAdapter do
 
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
-    mandatory_part = """
-    As a genius expert, your task is to understand the content and provide the parsed objects in json that match json schema\n
-    """
-
-    optional_notes =
-      if notes = opts[:notes] do
-        """
-        Additional notes on the schema:
-
-        #{notes}
-        """
-      else
-        ""
-      end
-
     sys_message = [
       %{
         role: "system",
-        content: mandatory_part <> optional_notes
+        content: InstructorLite.Prompt.prompt(opts)
       }
     ]
 
@@ -388,11 +352,7 @@ defmodule OllamaAdapter do
       message,
       %{
         role: "tool",
-        content: """
-        Validation failed. Please try again and fix following validation errors
-
-        #{errors}
-        """
+        content: InstructorLite.Prompt.validation_failed(errors)
       }
     ]
 

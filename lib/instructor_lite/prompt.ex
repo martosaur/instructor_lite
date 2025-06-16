@@ -1,7 +1,7 @@
 defmodule InstructorLite.Prompt do
   @moduledoc false
 
-  @doc "Returns default prompt used by InstructorLite"
+  @doc "Default prompt used by InstructorLite"
   @spec default() :: String.t()
   def default() do
     """
