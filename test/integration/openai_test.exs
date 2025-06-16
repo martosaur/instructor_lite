@@ -217,6 +217,32 @@ defmodule InstructorLite.Integration.OpenAITest do
       assert is_binary(name)
       assert %Date{} = birth_date
     end
+
+    test "disabled conversation state" do
+      result =
+        InstructorLite.instruct(
+          %{
+            model: "gpt-4o-mini",
+            store: false,
+            input: [
+              %{
+                role: "user",
+                content: "Guess the result!"
+              }
+            ]
+          },
+          response_model: TestSchemas.CoinGuess,
+          max_retries: 1,
+          adapter: OpenAI,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
+          ],
+          extra: :tails
+        )
+
+      assert {:ok, %{guess: :tails}} = result
+    end
   end
 
   describe "ChatCompletionsCompatible adapter" do
