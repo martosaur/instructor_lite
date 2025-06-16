@@ -5,7 +5,7 @@
 ```elixir
 Mix.install(
   [
-    {:instructor_lite, path: Path.expand("../../", __DIR__)},
+    {:instructor_lite, "~> 1.0"},
     {:req, "~> 0.5"},
     {:kino, "~> 0.16"}
   ]
@@ -117,7 +117,7 @@ result
 %Package{
   name: "InstructorLite",
   github_link: "https://github.com/martosaur/instructor_lite",
-  latest_version: "0.3.0"
+  latest_version: "1.0.0"
 }
 ```
 

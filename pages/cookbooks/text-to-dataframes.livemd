@@ -5,7 +5,7 @@
 ```elixir
 Mix.install(
   [
-    {:instructor_lite, path: Path.expand("../../", __DIR__)},
+    {:instructor_lite, "~> 1.0"},
     {:req, "~> 0.5"},
     {:explorer, "~> 0.7.2"},
     {:kino, "~> 0.12.0"},

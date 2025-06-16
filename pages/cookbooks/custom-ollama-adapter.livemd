@@ -5,7 +5,7 @@
 ```elixir
 Mix.install(
   [
-    {:instructor_lite, "~> 0.2"},
+    {:instructor_lite, "~> 1.0"},
     {:req, "~> 0.5"}
   ]
 )
