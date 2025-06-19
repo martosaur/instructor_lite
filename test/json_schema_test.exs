@@ -10,11 +10,13 @@ defmodule JSONSchemaTest do
     expected_json_schema = %{
       type: "object",
       title: "Child",
-      required: [:id, :name],
+      required: [:id, :name, :with_child_id, :with_children_id],
       additionalProperties: false,
       properties: %{
         name: %{type: "string"},
-        id: %{type: "integer"}
+        id: %{type: "integer"},
+        with_child_id: %{type: "string"},
+        with_children_id: %{type: "string"}
       }
     }
 
@@ -114,11 +116,13 @@ defmodule JSONSchemaTest do
         "Child" => %{
           type: "object",
           title: "Child",
-          required: [:id, :name],
+          required: [:id, :name, :with_child_id, :with_children_id],
           additionalProperties: false,
           properties: %{
             id: %{type: "integer"},
-            name: %{type: "string"}
+            name: %{type: "string"},
+            with_child_id: %{type: "string"},
+            with_children_id: %{type: "string"}
           }
         }
       },
@@ -140,11 +144,13 @@ defmodule JSONSchemaTest do
         "Child" => %{
           type: "object",
           title: "Child",
-          required: [:id, :name],
+          required: [:id, :name, :with_child_id, :with_children_id],
           additionalProperties: false,
           properties: %{
             id: %{type: "integer"},
-            name: %{type: "string"}
+            name: %{type: "string"},
+            with_child_id: %{type: "string"},
+            with_children_id: %{type: "string"}
           }
         }
       },
