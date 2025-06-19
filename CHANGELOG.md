@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+  * Require Elixir 1.15+
+
 ## v1.0.0
   * OpenAI adapter is changed to use the
   [Responses](https://platform.openai.com/docs/api-reference/responses) API.
