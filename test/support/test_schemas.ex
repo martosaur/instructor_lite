@@ -60,6 +60,8 @@ defmodule InstructorLite.TestSchemas do
 
     schema "child" do
       field(:name, :string)
+      field(:with_child_id, :string)
+      field(:with_children_id, :string)
     end
   end
 
