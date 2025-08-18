@@ -200,4 +200,74 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatibleTest do
       assert {:error, :timeout} = ChatCompletionsCompatible.send_request(%{}, opts)
     end
   end
+
+  describe "find_output/2" do
+    test "decodes json from expected output" do
+      response = %{
+        "choices" => [
+          %{
+            "finish_reason" => "stop",
+            "index" => 0,
+            "logprobs" => nil,
+            "message" => %{
+              "annotations" => [],
+              "content" => "Washington",
+              "refusal" => nil,
+              "role" => "assistant"
+            }
+          }
+        ],
+        "created" => 1_755_478_372,
+        "id" => "chatcmpl-C5iPElf5BA3Sr5MXIhpND6RQAN7UV",
+        "model" => "gpt-4o-mini-2024-07-18",
+        "object" => "chat.completion",
+        "service_tier" => "default",
+        "system_fingerprint" => "fp_560af6e559",
+        "usage" => %{
+          "completion_tokens" => 1,
+          "completion_tokens_details" => %{
+            "accepted_prediction_tokens" => 0,
+            "audio_tokens" => 0,
+            "reasoning_tokens" => 0,
+            "rejected_prediction_tokens" => 0
+          },
+          "prompt_tokens" => 23,
+          "prompt_tokens_details" => %{"audio_tokens" => 0, "cached_tokens" => 0},
+          "total_tokens" => 24
+        }
+      }
+
+      assert {:ok, "Washington"} =
+               ChatCompletionsCompatible.find_output(response, [])
+    end
+
+    test "returns refusal" do
+      response = %{
+        "choices" => [
+          %{
+            "finish_reason" => "stop",
+            "index" => 0,
+            "logprobs" => nil,
+            "message" => %{
+              "refusal" => "I'm sorry, I cannot assist with that request.",
+              "role" => "assistant"
+            }
+          }
+        ],
+        "id" => "chatcmpl-9ztRV28j73RenwUce6D43rOcB6mQF",
+        "model" => "gpt-4o-mini-2024-07-18",
+        "object" => "chat.completion"
+      }
+
+      assert {:error, :refusal, "I'm sorry, I cannot assist with that request."} =
+               ChatCompletionsCompatible.find_output(response, [])
+    end
+
+    test "unexpected content" do
+      response = "Internal Server Error"
+
+      assert {:error, :unexpected_response, "Internal Server Error"} =
+               ChatCompletionsCompatible.find_output(response, [])
+    end
+  end
 end

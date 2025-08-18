@@ -3,50 +3,56 @@ defmodule InstructorLite do
   alias InstructorLite.Adapters.OpenAI
   alias InstructorLite.Adapter
 
-  @options_schema NimbleOptions.new!(
-                    response_model: [
-                      type: {:or, [:atom, :map]},
-                      required: true,
-                      doc:
-                        "A module implementing `InstructorLite.Instruction` behaviour, Ecto schema or [schemaless Ecto definition](https://hexdocs.pm/ecto/Ecto.Changeset.html#module-schemaless-changesets)",
-                      type_spec: quote(do: atom() | Ecto.Changeset.types())
-                    ],
-                    adapter: [
-                      type: :atom,
-                      default: OpenAI,
-                      doc: "A module implementing `InstructorLite.Adapter` behaviour."
-                    ],
-                    max_retries: [
-                      type: :non_neg_integer,
-                      default: 0,
-                      doc: "How many additional attempts to make if changeset validation fails."
-                    ],
-                    validate_changeset: [
-                      type: {:fun, 2},
-                      doc:
-                        "Override function to be called instead of `response_model.validate_changeset/2` callback",
-                      type_spec: quote(do: (Ecto.Changeset.t(), opts() -> Ecto.Changeset.t()))
-                    ],
-                    notes: [
-                      type: :string,
-                      doc: "Additional notes about the schema that might be used by an adapter",
-                      type_spec: quote(do: String.t())
-                    ],
-                    json_schema: [
-                      type: :map,
-                      doc:
-                        "JSON schema to use instead of calling response_model.json_schema/0 callback or generating it at runtime using `InstructorLite.JSONSchema` module"
-                    ],
-                    adapter_context: [
-                      type: :any,
-                      doc: "Options used by adapter callbacks. See adapter docs for schema."
-                    ],
-                    extra: [
-                      type: :any,
-                      doc:
-                        "Any arbitrary term for ad-hoc usage. For example, in `c:InstructorLite.Instruction.validate_changeset/2` callback"
-                    ]
-                  )
+  @ask_options [
+    adapter: [
+      type: :atom,
+      default: OpenAI,
+      doc: "A module implementing `InstructorLite.Adapter` behaviour."
+    ],
+    adapter_context: [
+      type: :any,
+      doc: "Options used by adapter callbacks. See adapter docs for schema."
+    ],
+    extra: [
+      type: :any,
+      doc:
+        "Any arbitrary term for ad-hoc usage. For example, in `c:InstructorLite.Instruction.validate_changeset/2` callback"
+    ]
+  ]
+
+  @all_options [
+                 response_model: [
+                   type: {:or, [:atom, :map]},
+                   required: true,
+                   doc:
+                     "A module implementing `InstructorLite.Instruction` behaviour, Ecto schema or [schemaless Ecto definition](https://hexdocs.pm/ecto/Ecto.Changeset.html#module-schemaless-changesets)",
+                   type_spec: quote(do: atom() | Ecto.Changeset.types())
+                 ],
+                 max_retries: [
+                   type: :non_neg_integer,
+                   default: 0,
+                   doc: "How many additional attempts to make if changeset validation fails."
+                 ],
+                 validate_changeset: [
+                   type: {:fun, 2},
+                   doc:
+                     "Override function to be called instead of `response_model.validate_changeset/2` callback",
+                   type_spec: quote(do: (Ecto.Changeset.t(), opts() -> Ecto.Changeset.t()))
+                 ],
+                 notes: [
+                   type: :string,
+                   doc: "Additional notes about the schema that might be used by an adapter",
+                   type_spec: quote(do: String.t())
+                 ],
+                 json_schema: [
+                   type: :map,
+                   doc:
+                     "JSON schema to use instead of calling response_model.json_schema/0 callback or generating it at runtime using `InstructorLite.JSONSchema` module"
+                 ]
+               ] ++ @ask_options
+
+  @ask_options_schema NimbleOptions.new!(@ask_options)
+  @options_schema NimbleOptions.new!(@all_options)
 
   @moduledoc """
   Main building blocks of InstructorLite.
@@ -70,6 +76,11 @@ defmodule InstructorLite do
   Options passed to instructor functions.
   """
   @type opts :: [unquote(NimbleOptions.option_typespec(@options_schema))]
+
+  @typedoc """
+  Ask options are a subset of all options, used by the `ask/2` function.
+  """
+  @type ask_opts :: [unquote(NimbleOptions.option_typespec(@ask_options_schema))]
 
   @doc """
   Perform instruction session from start to finish.
@@ -316,6 +327,105 @@ defmodule InstructorLite do
 
           {:error, changeset, new_params}
       end
+    end
+  end
+
+  @doc """
+  Perform a simple request with a non-structured response.
+
+  This function is useful when you already have `InstructorLite` setup in the
+  project and need to get simple text output.
+
+  ## Examples
+
+  ### Basic Example
+
+  <!-- tabs-open -->
+
+  ### OpenAI
+
+  ```
+  iex> InstructorLite.ask(%{
+      model: "gpt-5-mini-2025-08-07",
+      input: [
+        %{role: "user", content: "Cite me the greatest opening line in the history of cyberpunk."}
+      ]
+    },
+    adapter: InstructorLite.Adapters.OpenAI,
+    adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :openai_key)]
+  )
+  {:ok, "The sky above the port was the color of television, tuned to a dead channel."}
+  ```
+
+  ### Anthropic
+
+  ```
+  iex> InstructorLite.ask(%{
+      messages: [
+        %{role: "user", content: "Cite me the greatest opening line in the history of cyberpunk."}
+      ],
+      max_tokens: 100,
+      model: "claude-sonnet-4-20250514"
+    },
+    adapter: InstructorLite.Adapters.Anthropic,
+    adapter_context: [api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)]
+  )
+  {:ok, "The sky above the port was the color of television, tuned to a dead channel."}
+  ```
+
+  ### Gemini
+
+  ```elixir
+  iex> InstructorLite.ask(%{
+      contents: [
+        %{
+          role: "user",
+          parts: [%{text: "Cite me the greatest opening line in the history of cyberpunk."}]
+        }
+      ]
+    },
+    adapter: InstructorLite.Adapters.Gemini,
+    adapter_context: [
+      api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
+    ]
+  )
+  {:ok, "The sky above the port was the color of a bruise."} # 🫠
+  ```
+
+  ### Grok
+
+  ```elixir
+  iex> InstructorLite.ask(%{
+      model: "grok-3-latest",
+      messages: [
+        %{
+          role: "user",
+          content: "Cite me the greatest opening line in the history of cyberpunk."
+        }
+      ]
+    },
+    adapter: InstructorLite.Adapters.ChatCompletionsCompatible,
+    adapter_context: [
+      url: "https://api.x.ai/v1/chat/completions",
+      api_key: Application.fetch_env!(:instructor_lite, :grok_key)
+    ]
+  )
+  {:ok, "The sky above the port was the color of television, tuned to a dead channel."}
+  ```
+
+  <!-- tabs-close -->
+  """
+  @doc since: "1.1.0"
+  @spec ask(Adapter.params(), ask_opts()) ::
+          {:ok, String.t()} | {:error, any()} | {:error, atom(), any()}
+  def ask(params, opts) do
+    opts =
+      opts
+      |> Keyword.take(Keyword.keys(@ask_options))
+      |> NimbleOptions.validate!(@ask_options_schema)
+
+    with {:ok, response} <- opts[:adapter].send_request(params, opts) do
+      opts[:adapter].find_output(response, opts)
     end
   end
 

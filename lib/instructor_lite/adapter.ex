@@ -56,4 +56,14 @@ defmodule InstructorLite.Adapter do
   """
   @callback parse_response(response(), InstructorLite.opts()) ::
               {:ok, parsed_response()} | {:error, any()} | {:error, reason :: atom(), any()}
+
+  @doc """
+  Find text output in the response.
+
+  Similar to `parse_response/2`, but this callback assumes a simple plain text
+  response. Used in `InstructorLite.ask/2` function. 
+  """
+  @doc since: "1.1.0"
+  @callback find_output(response(), InstructorLite.opts()) ::
+              {:ok, String.t()} | {:error, any()} | {:error, reason :: atom(), any()}
 end

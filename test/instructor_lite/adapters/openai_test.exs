@@ -278,4 +278,130 @@ defmodule InstructorLite.Adapters.OpenAITest do
       assert {:error, :timeout} = OpenAI.send_request(%{}, opts)
     end
   end
+
+  describe "find_output/2" do
+    test "finds output text in the response" do
+      response = %{
+        "background" => false,
+        "created_at" => 1_755_478_833,
+        "error" => nil,
+        "id" => "resp_68a27b31e07c81a2953dcec99d53cd0b039a917c08fd5671",
+        "incomplete_details" => nil,
+        "instructions" => nil,
+        "max_output_tokens" => nil,
+        "max_tool_calls" => nil,
+        "metadata" => %{},
+        "model" => "gpt-4o-mini-2024-07-18",
+        "object" => "response",
+        "output" => [
+          %{
+            "content" => [
+              %{
+                "annotations" => [],
+                "logprobs" => [],
+                "text" => "Washington",
+                "type" => "output_text"
+              }
+            ],
+            "id" => "msg_68a27b327fd481a2ba29054f85dcb97d039a917c08fd5671",
+            "role" => "assistant",
+            "status" => "completed",
+            "type" => "message"
+          }
+        ],
+        "parallel_tool_calls" => true,
+        "previous_response_id" => nil,
+        "prompt_cache_key" => nil,
+        "reasoning" => %{"effort" => nil, "summary" => nil},
+        "safety_identifier" => nil,
+        "service_tier" => "default",
+        "status" => "completed",
+        "store" => true,
+        "temperature" => 1.0,
+        "text" => %{"format" => %{"type" => "text"}, "verbosity" => "medium"},
+        "tool_choice" => "auto",
+        "tools" => [],
+        "top_logprobs" => 0,
+        "top_p" => 1.0,
+        "truncation" => "disabled",
+        "usage" => %{
+          "input_tokens" => 23,
+          "input_tokens_details" => %{"cached_tokens" => 0},
+          "output_tokens" => 2,
+          "output_tokens_details" => %{"reasoning_tokens" => 0},
+          "total_tokens" => 25
+        },
+        "user" => nil
+      }
+
+      assert {:ok, "Washington"} =
+               OpenAI.find_output(response, [])
+    end
+
+    test "isn't confused by reasoning" do
+      response = %{
+        "output" => [
+          %{
+            "id" => "rs_684b319d730c81a2946702c6a53a28260508fa8edf1ace4c",
+            "summary" => [],
+            "type" => "reasoning"
+          },
+          %{
+            "content" => [
+              %{
+                "annotations" => [],
+                "text" => "{\"name\":\"John\",\"age\":22}",
+                "type" => "output_text"
+              }
+            ],
+            "id" => "msg_684a1c5678788192962d8d367cef6b5b02f3c7b30c409e39",
+            "role" => "assistant",
+            "status" => "completed",
+            "type" => "message"
+          }
+        ],
+        "error" => nil,
+        "id" => "resp_684a1c55cf988192a31a297c41e8bdc802f3c7b30c409e39",
+        "model" => "gpt-4o-mini-2024-07-18",
+        "object" => "response",
+        "store" => true
+      }
+
+      assert {:ok, "{\"name\":\"John\",\"age\":22}"} =
+               OpenAI.find_output(response, [])
+    end
+
+    test "returns refusal" do
+      response = %{
+        "output" => [
+          %{
+            "content" => [
+              %{
+                "refusal" => "I'm sorry, I cannot assist with that request.",
+                "type" => "refusal"
+              }
+            ],
+            "id" => "msg_684a1c5678788192962d8d367cef6b5b02f3c7b30c409e39",
+            "role" => "assistant",
+            "type" => "message"
+          }
+        ],
+        "error" => nil,
+        "id" => "resp_684a1c55cf988192a31a297c41e8bdc802f3c7b30c409e39",
+        "model" => "gpt-4o-mini-2024-07-18",
+        "object" => "response",
+        "store" => true
+      }
+
+      assert {:error, :refusal, "I'm sorry, I cannot assist with that request."} =
+               OpenAI.find_output(response, [])
+    end
+
+    test "unexpected content" do
+      response = "Internal Server Error"
+
+      assert {:error, :unexpected_response, "Internal Server Error"} =
+               OpenAI.find_output(response, [])
+    end
+  end
 end
