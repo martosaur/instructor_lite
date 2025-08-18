@@ -226,5 +226,30 @@ defmodule InstructorLite.Integration.GrokTest do
       assert is_binary(name)
       assert %Date{} = birth_date
     end
+
+    test "simple call" do
+      result =
+        InstructorLite.ask(
+          %{
+            model: "grok-3-latest",
+            messages: [
+              %{
+                role: "user",
+                content:
+                  "Who was the first president of the USA? Answer with surname, single word."
+              }
+            ]
+          },
+          max_retries: 1,
+          adapter: ChatCompletionsCompatible,
+          adapter_context: [
+            url: "https://api.x.ai/v1/chat/completions",
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :grok_key)
+          ]
+        )
+
+      assert {:ok, "Washington" <> _} = result
+    end
   end
 end

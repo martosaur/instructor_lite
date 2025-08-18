@@ -348,4 +348,62 @@ defmodule InstructorLiteTest do
                InstructorLite.cast(model, params)
     end
   end
+
+  describe "ask/2" do
+    test "does not alter prompt in any way" do
+      params = %{
+        messages: [%{role: "system", content: "prompt"}]
+      }
+
+      options = [
+        adapter: MockAdapter
+      ]
+
+      MockAdapter
+      |> expect(:send_request, fn p, opts ->
+        assert p == params
+        assert opts == options
+
+        {:ok, :response_body}
+      end)
+      |> expect(:find_output, fn :response_body, _opts ->
+        {:ok, "George Washington"}
+      end)
+
+      assert {:ok, "George Washington"} = InstructorLite.ask(params, options)
+    end
+
+    test "no retries on request error" do
+      options = [adapter: MockAdapter]
+
+      expect(MockAdapter, :send_request, fn _params, _opts -> {:error, :timeout} end)
+
+      assert {:error, :timeout} = InstructorLite.ask(%{}, options)
+    end
+
+    test "tolerant to redundant options but doesn't pass them downstream" do
+      params = %{
+        messages: [%{role: "system", content: "prompt"}]
+      }
+
+      options = [
+        response_model: :foo,
+        adapter: MockAdapter
+      ]
+
+      MockAdapter
+      |> expect(:send_request, fn _p, opts ->
+        assert opts == [adapter: MockAdapter]
+
+        {:ok, :response_body}
+      end)
+      |> expect(:find_output, fn :response_body, opts ->
+        assert opts == [adapter: MockAdapter]
+
+        {:ok, "George Washington"}
+      end)
+
+      assert {:ok, "George Washington"} = InstructorLite.ask(params, options)
+    end
+  end
 end

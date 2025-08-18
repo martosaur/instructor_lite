@@ -184,4 +184,38 @@ defmodule InstructorLite.Adapters.AnthropicTest do
       assert {:error, :timeout} = Anthropic.send_request(%{}, opts)
     end
   end
+
+  describe "find_output/2" do
+    test "finds text output" do
+      response = %{
+        "content" => [%{"text" => "Washington", "type" => "text"}],
+        "id" => "msg_016zrCzBqd9Hvi4PHWNptfM6",
+        "model" => "claude-sonnet-4-20250514",
+        "role" => "assistant",
+        "stop_reason" => "end_turn",
+        "stop_sequence" => nil,
+        "type" => "message",
+        "usage" => %{
+          "cache_creation" => %{
+            "ephemeral_1h_input_tokens" => 0,
+            "ephemeral_5m_input_tokens" => 0
+          },
+          "cache_creation_input_tokens" => 0,
+          "cache_read_input_tokens" => 0,
+          "input_tokens" => 23,
+          "output_tokens" => 4,
+          "service_tier" => "standard"
+        }
+      }
+
+      assert {:ok, "Washington"} = Anthropic.find_output(response, [])
+    end
+
+    test "unexpected content" do
+      response = "Internal Server Error"
+
+      assert {:error, :unexpected_response, "Internal Server Error"} =
+               Anthropic.find_output(response, [])
+    end
+  end
 end

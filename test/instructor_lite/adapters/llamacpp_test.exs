@@ -121,4 +121,22 @@ defmodule InstructorLite.Adapters.LlamacppTest do
       assert {:error, :timeout} = Llamacpp.send_request(%{}, opts)
     end
   end
+
+  describe "find_output/2" do
+    test "finds output in the response" do
+      response = %{
+        "content" => "Washington"
+      }
+
+      assert {:ok, "Washington"} =
+               Llamacpp.find_output(response, [])
+    end
+
+    test "unexpected content" do
+      response = "Internal Server Error"
+
+      assert {:error, :unexpected_response, "Internal Server Error"} =
+               Llamacpp.find_output(response, [])
+    end
+  end
 end

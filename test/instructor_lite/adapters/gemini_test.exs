@@ -308,4 +308,108 @@ defmodule InstructorLite.Adapters.GeminiTest do
       assert {:error, :timeout} = Gemini.send_request(%{}, opts)
     end
   end
+
+  describe "find_output/2" do
+    test "finds output in response" do
+      response = %{
+        "candidates" => [
+          %{
+            "avgLogprobs" => -1.1562569852685556e-5,
+            "content" => %{
+              "parts" => [%{"text" => "Washington\n"}],
+              "role" => "model"
+            },
+            "finishReason" => "STOP",
+            "safetyRatings" => [
+              %{
+                "category" => "HARM_CATEGORY_HATE_SPEECH",
+                "probability" => "NEGLIGIBLE"
+              },
+              %{
+                "category" => "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "probability" => "NEGLIGIBLE"
+              },
+              %{
+                "category" => "HARM_CATEGORY_HARASSMENT",
+                "probability" => "NEGLIGIBLE"
+              },
+              %{
+                "category" => "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "probability" => "NEGLIGIBLE"
+              }
+            ]
+          }
+        ],
+        "modelVersion" => "gemini-1.5-flash-8b-001",
+        "responseId" => "fn-iaJfqHqit698PxprM8AQ",
+        "usageMetadata" => %{
+          "candidatesTokenCount" => 2,
+          "candidatesTokensDetails" => [%{"modality" => "TEXT", "tokenCount" => 2}],
+          "promptTokenCount" => 16,
+          "promptTokensDetails" => [%{"modality" => "TEXT", "tokenCount" => 16}],
+          "totalTokenCount" => 18
+        }
+      }
+
+      assert {:ok, "Washington\n"} =
+               Gemini.find_output(response, [])
+    end
+
+    test "returns refusal" do
+      response = %{
+        "promptFeedback" => %{
+          "blockReason" => "OTHER"
+        },
+        "usageMetadata" => %{
+          "candidatesTokenCount" => 25,
+          "promptTokenCount" => 34,
+          "totalTokenCount" => 59
+        }
+      }
+
+      assert {:error, :refusal, %{"blockReason" => "OTHER"}} =
+               Gemini.find_output(response, [])
+    end
+
+    test "unexpected content" do
+      response = "Internal Server Error"
+
+      assert {:error, :unexpected_response, "Internal Server Error"} =
+               Gemini.find_output(response, [])
+    end
+
+    test "with reasoning summary" do
+      response = %{
+        "candidates" => [
+          %{
+            "content" => %{
+              "parts" => [
+                %{
+                  "text" =>
+                    "**Process for Providing a Concise Response**\n\nOkay, the user needs the last name of the first U.S. president. Simple enough. First, I quickly parsed the constraints: they want *only* the surname, as a *single word*.  My long-term memory immediately pulled up the answer: George Washington. Easy. Now, let's extract the surname, which is obviously \"Washington\". Next, I have to ensure the response meets all the parameters. Is \"Washington\" a valid surname? Yes, of course. Is it just a single word? Absolutely.  Therefore, \"Washington\" is the correct response.\n",
+                  "thought" => true
+                },
+                %{"text" => "Washington"}
+              ],
+              "role" => "model"
+            },
+            "finishReason" => "STOP",
+            "index" => 0
+          }
+        ],
+        "modelVersion" => "models/gemini-2.5-flash-preview-05-20",
+        "responseId" => "93-iaOXAG477qtsP0tvIuAY",
+        "usageMetadata" => %{
+          "candidatesTokenCount" => 1,
+          "promptTokenCount" => 17,
+          "promptTokensDetails" => [%{"modality" => "TEXT", "tokenCount" => 17}],
+          "thoughtsTokenCount" => 134,
+          "totalTokenCount" => 152
+        }
+      }
+
+      assert {:ok, "Washington"} =
+               Gemini.find_output(response, [])
+    end
+  end
 end

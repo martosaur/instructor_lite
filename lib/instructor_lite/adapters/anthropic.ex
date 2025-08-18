@@ -156,4 +156,22 @@ defmodule InstructorLite.Adapters.Anthropic do
         {:error, :unexpected_response, other}
     end
   end
+
+  @doc """
+  Parse API response in search of plain text output.
+
+  Can return:
+    * `{:ok, text_output}` on success.
+    * `{:error, :unexpected_response, response}` if response is of unexpected shape.
+  """
+  @impl InstructorLite.Adapter
+  def find_output(response, _opts) do
+    case response do
+      %{"content" => [%{"text" => text}]} ->
+        {:ok, text}
+
+      other ->
+        {:error, :unexpected_response, other}
+    end
+  end
 end

@@ -243,6 +243,29 @@ defmodule InstructorLite.Integration.OpenAITest do
 
       assert {:ok, %{guess: :tails}} = result
     end
+
+    test "simple call" do
+      result =
+        InstructorLite.ask(
+          %{
+            model: "gpt-4o-mini",
+            input: [
+              %{
+                role: "user",
+                content:
+                  "Who was the first president of the USA? Answer with surname, single word."
+              }
+            ]
+          },
+          adapter: OpenAI,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
+          ]
+        )
+
+      assert {:ok, "Washington" <> _} = result
+    end
   end
 
   describe "ChatCompletionsCompatible adapter" do
@@ -455,6 +478,29 @@ defmodule InstructorLite.Integration.OpenAITest do
       assert {:ok, %{name: name, birth_date: birth_date}} = result
       assert is_binary(name)
       assert %Date{} = birth_date
+    end
+
+    test "simple call" do
+      result =
+        InstructorLite.ask(
+          %{
+            model: "gpt-4o-mini",
+            messages: [
+              %{
+                role: "user",
+                content:
+                  "Who was the first president of the USA? Answer with surname, single word."
+              }
+            ]
+          },
+          adapter: ChatCompletionsCompatible,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :openai_key)
+          ]
+        )
+
+      assert {:ok, "Washington" <> _} = result
     end
   end
 end

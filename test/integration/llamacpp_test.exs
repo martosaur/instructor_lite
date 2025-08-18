@@ -42,5 +42,19 @@ defmodule InstructorLite.Integration.LlamacppTest do
       assert {:ok, %{class: :spam, score: score}} = result
       assert is_float(score)
     end
+
+    test "simple call" do
+      result =
+        InstructorLite.ask(
+          %{prompt: "Who was the first president of the USA?"},
+          adapter: Llamacpp,
+          adapter_context: [
+            http_client: Req,
+            url: Application.fetch_env!(:instructor_lite, :llamacpp_url)
+          ]
+        )
+
+      assert {:ok, "Washington" <> _} = result
+    end
   end
 end

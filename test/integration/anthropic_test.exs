@@ -207,5 +207,29 @@ defmodule InstructorLite.Integration.AnthropicTest do
       assert is_binary(name)
       assert %Date{} = birth_date
     end
+
+    test "simple call" do
+      result =
+        InstructorLite.ask(
+          %{
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 10,
+            messages: [
+              %{
+                role: "user",
+                content:
+                  "Who was the first president of the USA? Answer with surname, single word."
+              }
+            ]
+          },
+          adapter: Anthropic,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)
+          ]
+        )
+
+      assert {:ok, "Washington" <> _} = result
+    end
   end
 end

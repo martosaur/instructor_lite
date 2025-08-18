@@ -144,12 +144,27 @@ defmodule InstructorLite.Adapters.Gemini do
     * `{:error, :unexpected_response, response}` if response is of unexpected shape.
   """
   @impl InstructorLite.Adapter
-  def parse_response(response, _opts) do
+  def parse_response(response, opts) do
+    with {:ok, json} <- find_output(response, opts) do
+      InstructorLite.JSON.decode(json)
+    end
+  end
+
+  @doc """
+  Parse text generation endpoint response in search of plain text output.
+
+  Can return:
+    * `{:ok, text_output}` on success.
+    * `{:error, :refusal, prompt_feedback}` if [request was blocked](https://ai.google.dev/api/generate-content#generatecontentresponse).
+    * `{:error, :unexpected_response, response}` if response is of unexpected shape.
+  """
+  @impl InstructorLite.Adapter
+  def find_output(response, _opts) do
     case response do
       %{"candidates" => [%{"content" => %{"parts" => parts}}]} ->
         Enum.find_value(parts, {:error, :unexpected_response, response}, fn
           %{"thought" => true} -> false
-          %{"text" => text} -> InstructorLite.JSON.decode(text)
+          %{"text" => text} -> {:ok, text}
           _ -> false
         end)
 

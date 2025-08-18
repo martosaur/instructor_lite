@@ -128,10 +128,25 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatible do
     * `{:error, :unexpected_response, response}` if response is of unexpected shape.
   """
   @impl InstructorLite.Adapter
-  def parse_response(response, _opts) do
+  def parse_response(response, opts) do
+    with {:ok, json} <- find_output(response, opts) do
+      InstructorLite.JSON.decode(json)
+    end
+  end
+
+  @doc """
+  Parse chat completion endpoint response in search of plain text output.
+
+  Can return:
+    * `{:ok, text_output}` on success.
+    * `{:error, :refusal, reason}` on [refusal](https://platform.openai.com/docs/guides/structured-outputs/refusals).
+    * `{:error, :unexpected_response, response}` if response is of unexpected shape.
+  """
+  @impl InstructorLite.Adapter
+  def find_output(response, _opts) do
     case response do
-      %{"choices" => [%{"message" => %{"content" => json, "refusal" => nil}}]} ->
-        InstructorLite.JSON.decode(json)
+      %{"choices" => [%{"message" => %{"content" => output, "refusal" => nil}}]} ->
+        {:ok, output}
 
       %{"choices" => [%{"message" => %{"refusal" => refusal}}]} ->
         {:error, :refusal, refusal}

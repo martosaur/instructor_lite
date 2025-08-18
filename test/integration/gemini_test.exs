@@ -183,5 +183,31 @@ defmodule InstructorLite.Integration.GeminiTest do
       assert is_binary(name)
       assert %Date{} = birth_date
     end
+
+    test "simple call" do
+      result =
+        InstructorLite.ask(
+          %{
+            contents: [
+              %{
+                role: "user",
+                parts: [
+                  %{
+                    text:
+                      "Who was the first president of the USA? Answer with surname, single word."
+                  }
+                ]
+              }
+            ]
+          },
+          adapter: Gemini,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
+          ]
+        )
+
+      assert {:ok, "Washington" <> _} = result
+    end
   end
 end
