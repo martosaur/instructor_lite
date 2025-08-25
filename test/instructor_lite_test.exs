@@ -405,5 +405,21 @@ defmodule InstructorLiteTest do
 
       assert {:ok, "George Washington"} = InstructorLite.ask(params, options)
     end
+
+    test "raises if adapter doesn't implement find_output/2" do
+      assert_raise(
+        RuntimeError,
+        "Can't use InstructorLite.ask/2 because IncompleteAdapter.find_output/2 is not implemented",
+        fn ->
+          InstructorLite.ask(%{}, adapter: IncompleteAdapter)
+        end
+      )
+    end
+  end
+
+  test "pre-1.1.0 adapters don't throw warnings" do
+    refute ExUnit.CaptureIO.capture_io(:stderr, fn ->
+             Code.compile_file("test/support/incomplete_adapter.ex")
+           end) =~ "required by behaviour InstructorLite.Adapter is not implemented"
   end
 end
