@@ -424,8 +424,12 @@ defmodule InstructorLite do
       |> Keyword.take(Keyword.keys(@ask_options))
       |> NimbleOptions.validate!(@ask_options_schema)
 
-    with {:ok, response} <- opts[:adapter].send_request(params, opts) do
-      opts[:adapter].find_output(response, opts)
+    if function_exported?(opts[:adapter], :find_output, 2) do
+      with {:ok, response} <- opts[:adapter].send_request(params, opts) do
+        opts[:adapter].find_output(response, opts)
+      end
+    else
+      raise "Can't use InstructorLite.ask/2 because #{inspect(opts[:adapter])}.find_output/2 is not implemented"
     end
   end
 

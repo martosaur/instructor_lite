@@ -66,4 +66,6 @@ defmodule InstructorLite.Adapter do
   @doc since: "1.1.0"
   @callback find_output(response(), InstructorLite.opts()) ::
               {:ok, String.t()} | {:error, any()} | {:error, reason :: atom(), any()}
+
+  @optional_callbacks [find_output: 2]
 end
