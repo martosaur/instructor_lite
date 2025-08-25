@@ -7,7 +7,7 @@
   * Library now requires Elixir 1.15+
   * Introduces new `InstructorLite.ask/2` function for cases where you need plain non-structured output.
   * To accommodate non-structured output, a new optional
-    `InstructorLite.Adapter.find_output/2` callback was added to the adapter
+    `c:InstructorLite.Adapter.find_output/2` callback was added to the adapter
     behaviour. If you're using a custom adapter, consider implementing it if you
     want to use `InstructorLite.ask/2`
 
