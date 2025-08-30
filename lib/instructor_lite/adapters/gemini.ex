@@ -31,9 +31,9 @@ defmodule InstructorLite.Adapters.Gemini do
   >
   > Note how, unlike other adapters, the Gemini adapter expects `model` under `adapter_context`. 
 
-  > #### JSON Schema {: .warning}
+  > #### JSON Schema {: .info}
   >
-  > Gemini's idea of JSON Schema is [quite different](https://ai.google.dev/api/generate-content#generationconfig) from other major models, so `InstructorLite.JSONSchema` won't help you even for simple cases. Luckily, the Gemini API provides detailed errors for invalid schemas.
+  > Gemini's JSON Schema format is [quite different](https://ai.google.dev/api/generate-content#generationconfig) from other major models. This adapter automatically converts Ecto schemas to Gemini's format using `InstructorLite.GeminiJSON`. For complex schemas, you can still provide a custom `json_schema` option that follows Gemini's format.
 
   """
   @behaviour InstructorLite.Adapter
@@ -102,14 +102,20 @@ defmodule InstructorLite.Adapters.Gemini do
 
   @doc """
   Puts `systemInstruction` and updates `generationConfig` in `params` with prompt based on `json_schema` and `notes`.
+  
+  If the json_schema was auto-generated from an Ecto schema (not manually provided),
+  it will be converted to Gemini's format using InstructorLite.GeminiJSON.
   """
   @impl InstructorLite.Adapter
   def initial_prompt(params, opts) do
     sys_instruction = %{parts: [%{text: InstructorLite.Prompt.prompt(opts)}]}
 
+    # Get the schema - either use the provided one or generate Gemini-compatible one
+    schema = get_gemini_schema(opts)
+
     generation_config = %{
       responseMimeType: "application/json",
-      responseSchema: Keyword.fetch!(opts, :json_schema)
+      responseSchema: schema
     }
 
     params
@@ -118,6 +124,42 @@ defmodule InstructorLite.Adapters.Gemini do
       Map.merge(generation_config, user_config)
     end)
   end
+  
+  defp get_gemini_schema(opts) do
+    json_schema = Keyword.fetch!(opts, :json_schema)
+    response_model = Keyword.get(opts, :response_model)
+    
+    # Check if this looks like an auto-generated schema from InstructorLite.JSONSchema
+    # Those have a specific structure with title, additionalProperties: false, etc.
+    if is_auto_generated_schema?(json_schema) and is_atom(response_model) do
+      # Convert using GeminiJSON for better compatibility
+      try do
+        InstructorLite.GeminiJSON.from_ecto_schema(response_model)
+      rescue
+        _ ->
+          # Fall back to the original schema if conversion fails
+          json_schema
+      end
+    else
+      # Use the schema as-is (either manually provided or already Gemini-compatible)
+      json_schema
+    end
+  end
+  
+  defp is_auto_generated_schema?(schema) when is_map(schema) do
+    # Auto-generated schemas from InstructorLite.JSONSchema have these characteristics:
+    # - Have "additionalProperties": false
+    # - May have a "title" field
+    # - Have standard JSON Schema structure
+    Map.get(schema, :additionalProperties) == false or
+    Map.get(schema, "additionalProperties") == false or
+    Map.has_key?(schema, :title) or
+    Map.has_key?(schema, "title") or
+    Map.has_key?(schema, :"$defs") or
+    Map.has_key?(schema, "$defs")
+  end
+  
+  defp is_auto_generated_schema?(_), do: false
 
   @doc """
   Updates `params` with prompt for retrying a request.
