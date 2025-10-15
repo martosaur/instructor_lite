@@ -135,6 +135,28 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatibleTest do
                ChatCompletionsCompatible.parse_response(response, [])
     end
 
+    test "handles JSON response without refusal field" do
+      response = %{
+        "choices" => [
+          %{
+            "finish_reason" => "stop",
+            "index" => 0,
+            "logprobs" => nil,
+            "message" => %{
+              "content" => "{\"name\":\"John Doe\",\"age\":30}",
+              "role" => "assistant"
+            }
+          }
+        ],
+        "id" => "chatcmpl-test",
+        "model" => "mistral-small-latest",
+        "object" => "chat.completion"
+      }
+
+      assert {:ok, %{"age" => 30, "name" => "John Doe"}} =
+               ChatCompletionsCompatible.parse_response(response, [])
+    end
+
     test "unexpected content" do
       response = "Internal Server Error"
 
@@ -260,6 +282,28 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatibleTest do
       }
 
       assert {:error, :refusal, "I'm sorry, I cannot assist with that request."} =
+               ChatCompletionsCompatible.find_output(response, [])
+    end
+
+    test "handles response without refusal field" do
+      response = %{
+        "choices" => [
+          %{
+            "finish_reason" => "stop",
+            "index" => 0,
+            "logprobs" => nil,
+            "message" => %{
+              "content" => "Valid JSON response",
+              "role" => "assistant"
+            }
+          }
+        ],
+        "id" => "chatcmpl-test",
+        "model" => "mistral-small-latest",
+        "object" => "chat.completion"
+      }
+
+      assert {:ok, "Valid JSON response"} =
                ChatCompletionsCompatible.find_output(response, [])
     end
 
