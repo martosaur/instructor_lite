@@ -424,12 +424,17 @@ defmodule InstructorLite do
       |> Keyword.take(Keyword.keys(@ask_options))
       |> NimbleOptions.validate!(@ask_options_schema)
 
-    if function_exported?(opts[:adapter], :find_output, 2) do
+    with {:module, _} <- Code.ensure_loaded(opts[:adapter]),
+         true <- function_exported?(opts[:adapter], :find_output, 2) do
       with {:ok, response} <- opts[:adapter].send_request(params, opts) do
         opts[:adapter].find_output(response, opts)
       end
     else
-      raise "Can't use InstructorLite.ask/2 because #{inspect(opts[:adapter])}.find_output/2 is not implemented"
+      {:error, :nofile} ->
+        raise "Adapter #{inspect(opts[:adapter])} is not available"
+
+      false ->
+        raise "Can't use InstructorLite.ask/2 because #{inspect(opts[:adapter])}.find_output/2 is not implemented"
     end
   end
 
