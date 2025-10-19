@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v1.1.1
+
+  * Fix a bug when `ChatCompletionsCompatible` adapter would not work correctly
+    with providers that don't return `refusal` field (Mistral)
+  * Fix rare bug when `InstructorLite.ask/2` would fail in non-release environments
+
 ## v1.1.0
 
   * Library now requires Elixir 1.15+
