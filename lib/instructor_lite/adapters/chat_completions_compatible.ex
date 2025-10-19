@@ -145,14 +145,11 @@ defmodule InstructorLite.Adapters.ChatCompletionsCompatible do
   @impl InstructorLite.Adapter
   def find_output(response, _opts) do
     case response do
-      %{"choices" => [%{"message" => %{"content" => output, "refusal" => nil}}]} ->
-        {:ok, output}
-
-      %{"choices" => [%{"message" => %{"content" => output}}]} when not is_nil(output) ->
-        {:ok, output}
-
       %{"choices" => [%{"message" => %{"refusal" => refusal}}]} when not is_nil(refusal) ->
         {:error, :refusal, refusal}
+
+      %{"choices" => [%{"message" => %{"content" => output}}]} ->
+        {:ok, output}
 
       other ->
         {:error, :unexpected_response, other}
