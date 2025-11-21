@@ -35,6 +35,9 @@ defmodule InstructorLite.Adapters.Gemini do
   >
   > Gemini's idea of JSON Schema is [quite different](https://ai.google.dev/api/generate-content#generationconfig) from other major models, so `InstructorLite.JSONSchema` won't help you even for simple cases. Luckily, the Gemini API provides detailed errors for invalid schemas.
 
+  > #### Chat Completions Compatible {: .tip}
+  >
+  > If any of the limitations above are important to you, know that Gemini also provides a [chat completion](https://ai.google.dev/gemini-api/docs/openai) endpoint. You can use it with the `InstructorLite.Adapters.ChatCompletionsCompatible` adapter.
   """
   @behaviour InstructorLite.Adapter
 

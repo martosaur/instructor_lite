@@ -1,8 +1,12 @@
 defmodule InstructorLite.Adapters.ChatCompletionsCompatible do
   @moduledoc """
-  Adapter for Chat Completions-compatible API endpoints, such as [OpenAI](https://platform.openai.com/docs/api-reference/chat) or [Grok](https://docs.x.ai/docs/api-reference#chat-completions).
+  Adapter for Chat Completions-compatible API endpoints, such as
+  [OpenAI](https://platform.openai.com/docs/api-reference/chat),
+  [Grok](https://docs.x.ai/docs/api-reference#chat-completions) or
+  [Gemini](https://ai.google.dev/gemini-api/docs/openai).
 
-  This adapter uses [structured outputs](https://platform.openai.com/docs/guides/structured-outputs/structured-outputs).
+  This adapter uses [structured
+  outputs](https://platform.openai.com/docs/guides/structured-outputs/structured-outputs).
 
   ## Params
   `params` argument should be shaped as a [Create chat completion request body](https://platform.openai.com/docs/api-reference/chat/create).
