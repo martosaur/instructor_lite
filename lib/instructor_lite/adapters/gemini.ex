@@ -90,7 +90,7 @@ defmodule InstructorLite.Adapters.Gemini do
       |> Keyword.merge(context[:http_options])
       |> Keyword.merge(
         json: params,
-        params: [key: context[:api_key]]
+        headers: [{"x-goog-api-key", context[:api_key]}]
       )
 
     case context[:http_client].post(context[:url], options) do

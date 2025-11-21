@@ -271,7 +271,7 @@ defmodule InstructorLite.Adapters.GeminiTest do
                  path_params: [model: "new-model"],
                  path_params_style: :colon,
                  json: %{hello: "world"},
-                 params: [key: "api-key"]
+                 headers: [{"x-goog-api-key", "api-key"}]
                ]
 
         {:ok, %{status: 200, body: "response"}}
