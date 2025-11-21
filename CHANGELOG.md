@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.1.2
+
   * Pass Gemini token in request header rather than in request parameter (as is shown in API reference 😬)
   * Add integration test for `ChatCompletionsCompatible` adapter with Gemini
 

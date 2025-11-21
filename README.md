@@ -156,7 +156,7 @@ In your mix.exs, add `:instructor_lite` to your list of dependencies:
 ```elixir
 def deps do
   [
-    {:instructor_lite, "~> 1.1.1"}
+    {:instructor_lite, "~> 1.1.2"}
   ]
 end
 ```
