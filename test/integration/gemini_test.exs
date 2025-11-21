@@ -142,7 +142,7 @@ defmodule InstructorLite.Integration.GeminiTest do
           adapter_context: [
             http_client: Req,
             api_key: Application.fetch_env!(:instructor_lite, :gemini_key),
-            model: "gemini-1.5-pro"
+            model: "gemini-2.5-flash"
           ],
           extra: :tails
         )
@@ -173,7 +173,7 @@ defmodule InstructorLite.Integration.GeminiTest do
           json_schema: json_schema,
           adapter: Gemini,
           adapter_context: [
-            model: "gemini-2.5-flash-preview-05-20",
+            model: "gemini-2.5-pro",
             http_client: Req,
             api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
           ]
