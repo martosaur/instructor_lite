@@ -3,10 +3,11 @@ defmodule InstructorLite.Integration.GeminiTest do
 
   alias InstructorLite.TestSchemas
   alias InstructorLite.Adapters.Gemini
+  alias InstructorLite.Adapters.ChatCompletionsCompatible
 
   @moduletag :integration
 
-  describe "Gemini" do
+  describe "Gemini generateContent" do
     def to_gemini_schema(json_schema), do: Map.drop(json_schema, [:title, :additionalProperties])
 
     test "schemaless" do
@@ -208,6 +209,32 @@ defmodule InstructorLite.Integration.GeminiTest do
         )
 
       assert {:ok, "Washington" <> _} = result
+    end
+  end
+
+  describe "Gemini chat completions" do
+    test "schemaless" do
+      result =
+        InstructorLite.instruct(
+          %{
+            model: "gemini-2.5-flash-lite",
+            messages: [
+              %{role: "user", content: "Who was the first president of the USA?"}
+            ]
+          },
+          response_model: %{name: :string, birth_date: :date},
+          max_retries: 1,
+          adapter: ChatCompletionsCompatible,
+          adapter_context: [
+            url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
+          ]
+        )
+
+      assert {:ok, %{name: name, birth_date: birth_date}} = result
+      assert is_binary(name)
+      assert %Date{} = birth_date
     end
   end
 end
