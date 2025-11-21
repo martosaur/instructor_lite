@@ -62,7 +62,7 @@ defmodule InstructorLite.Adapters.Gemini do
                          ],
                          model: [
                            type: :string,
-                           default: "gemini-1.5-flash-8b",
+                           default: "gemini-2.5-flash-lite",
                            doc:
                              "Gemini [model](https://ai.google.dev/gemini-api/docs/models/gemini)"
                          ]
