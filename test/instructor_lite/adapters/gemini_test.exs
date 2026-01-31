@@ -15,7 +15,7 @@ defmodule InstructorLite.Adapters.GeminiTest do
       assert Gemini.initial_prompt(params, json_schema: :json_schema, notes: "Explanation") == %{
                generationConfig: %{
                  responseMimeType: "application/json",
-                 responseSchema: :json_schema
+                 responseJsonSchema: :json_schema
                },
                systemInstruction: %{
                  parts: [
@@ -40,7 +40,7 @@ defmodule InstructorLite.Adapters.GeminiTest do
       assert Gemini.initial_prompt(params, json_schema: :json_schema, notes: "Explanation") == %{
                generationConfig: %{
                  responseMimeType: "application/json",
-                 responseSchema: :json_schema,
+                 responseJsonSchema: :json_schema,
                  seed: 42
                },
                systemInstruction: %{
