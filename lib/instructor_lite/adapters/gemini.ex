@@ -31,9 +31,11 @@ defmodule InstructorLite.Adapters.Gemini do
   >
   > Note how, unlike other adapters, the Gemini adapter expects `model` under `adapter_context`. 
 
-  > #### JSON Schema {: .warning}
+  > #### JSON Schema {: .info}
   >
-  > Gemini's idea of JSON Schema is [quite different](https://ai.google.dev/api/generate-content#generationconfig) from other major models, so `InstructorLite.JSONSchema` won't help you even for simple cases. Luckily, the Gemini API provides detailed errors for invalid schemas.
+  > The adapter uses Gemini's [`responseJsonSchema`](https://ai.google.dev/api/generate-content#generationconfig)
+  > field which accepts standard JSON Schema, including features like `$ref`, `$defs`,
+  > `title`, and `additionalProperties` that Gemini's older `responseSchema` field does not support.
 
   > #### Chat Completions Compatible {: .tip}
   >
@@ -112,7 +114,7 @@ defmodule InstructorLite.Adapters.Gemini do
 
     generation_config = %{
       responseMimeType: "application/json",
-      responseSchema: Keyword.fetch!(opts, :json_schema)
+      responseJsonSchema: Keyword.fetch!(opts, :json_schema)
     }
 
     params
