@@ -8,13 +8,8 @@ defmodule InstructorLite.Integration.GeminiTest do
   @moduletag :integration
 
   describe "Gemini generateContent" do
-    def to_gemini_schema(json_schema), do: Map.drop(json_schema, [:title, :additionalProperties])
-
     test "schemaless" do
       response_model = %{name: :string, birth_date: :date}
-
-      json_schema =
-        response_model |> InstructorLite.JSONSchema.from_ecto_schema() |> to_gemini_schema()
 
       result =
         InstructorLite.instruct(
@@ -24,7 +19,6 @@ defmodule InstructorLite.Integration.GeminiTest do
             ]
           },
           response_model: response_model,
-          json_schema: json_schema,
           adapter: Gemini,
           adapter_context: [
             http_client: Req,
@@ -54,7 +48,6 @@ defmodule InstructorLite.Integration.GeminiTest do
             ]
           },
           response_model: TestSchemas.SpamPrediction,
-          json_schema: TestSchemas.SpamPrediction.json_schema() |> to_gemini_schema(),
           adapter: Gemini,
           adapter_context: [
             http_client: Req,
@@ -78,7 +71,6 @@ defmodule InstructorLite.Integration.GeminiTest do
             ]
           },
           response_model: TestSchemas.AllEctoTypes,
-          json_schema: TestSchemas.AllEctoTypes.json_schema() |> to_gemini_schema(),
           adapter: Gemini,
           adapter_context: [
             http_client: Req,
@@ -137,7 +129,6 @@ defmodule InstructorLite.Integration.GeminiTest do
             ]
           },
           response_model: TestSchemas.CoinGuess,
-          json_schema: TestSchemas.CoinGuess.json_schema() |> to_gemini_schema(),
           max_retries: 1,
           adapter: Gemini,
           adapter_context: [
@@ -154,9 +145,6 @@ defmodule InstructorLite.Integration.GeminiTest do
     test "reasoning model" do
       response_model = %{name: :string, birth_date: :date}
 
-      json_schema =
-        response_model |> InstructorLite.JSONSchema.from_ecto_schema() |> to_gemini_schema()
-
       result =
         InstructorLite.instruct(
           %{
@@ -171,7 +159,6 @@ defmodule InstructorLite.Integration.GeminiTest do
             }
           },
           response_model: response_model,
-          json_schema: json_schema,
           adapter: Gemini,
           adapter_context: [
             model: "gemini-2.5-pro",
