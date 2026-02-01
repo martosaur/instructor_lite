@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+  * Update Anthropic adapter default model to `claude-haiku-4-5`
+  * Use [structured
+    outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
+    in Anthropic adapter for models that support it
+
 ## v1.1.2
 
   * Pass Gemini token in request header rather than in request parameter (as is shown in API reference 😬)

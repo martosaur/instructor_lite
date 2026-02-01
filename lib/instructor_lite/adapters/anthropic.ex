@@ -2,7 +2,12 @@ defmodule InstructorLite.Adapters.Anthropic do
   @moduledoc """
   [Anthropic](https://docs.anthropic.com/en/home) adapter.
 
-  This adapter is implemented using the [Messages API](https://docs.anthropic.com/en/api/messages) and [function calling](https://docs.anthropic.com/en/docs/build-with-claude/tool-use).
+  This adapter is implemented using the [Messages
+  API](https://docs.anthropic.com/en/api/messages) and [structured
+  outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs).
+  For older models that don't support structured outputs, [function
+  calling](https://docs.anthropic.com/en/docs/build-with-claude/tool-use) is
+  used.
 
   ## Params
   `params` argument should be shaped as a [Create message request body](https://docs.anthropic.com/en/api/messages).
@@ -12,7 +17,7 @@ defmodule InstructorLite.Adapters.Anthropic do
   ```
   InstructorLite.instruct(%{
       messages: [%{role: "user", content: "John is 25yo"}],
-      model: "claude-3-5-sonnet-20240620",
+      model: "claude-sonnet-4-5",
       metadata: %{user_id: "3125"}
     },
     response_model: %{name: :string, age: :integer},
@@ -24,7 +29,7 @@ defmodule InstructorLite.Adapters.Anthropic do
   """
   @behaviour InstructorLite.Adapter
 
-  @default_model "claude-3-5-sonnet-20240620"
+  @default_model "claude-haiku-4-5"
   @default_max_tokens 1024
 
   @send_request_schema NimbleOptions.new!(
@@ -100,41 +105,63 @@ defmodule InstructorLite.Adapters.Anthropic do
     |> Map.put_new(:model, @default_model)
     |> Map.put_new(:max_tokens, @default_max_tokens)
     |> Map.put_new(:system, InstructorLite.Prompt.prompt(opts))
-    |> Map.put_new(:tool_choice, %{type: "tool", name: "Schema"})
-    |> Map.put_new(:tools, [
-      %{
-        name: "Schema",
-        description:
-          "Correctly extracted `Schema` with all the required parameters with correct types",
-        input_schema: Keyword.fetch!(opts, :json_schema)
-      }
-    ])
+    |> then(fn params ->
+      if legacy_model?(params.model) do
+        params
+        |> Map.put_new(:tool_choice, %{type: "tool", name: "Schema"})
+        |> Map.put_new(:tools, [
+          %{
+            name: "Schema",
+            description:
+              "Correctly extracted `Schema` with all the required parameters with correct types",
+            input_schema: Keyword.fetch!(opts, :json_schema)
+          }
+        ])
+      else
+        put_in(params, [Access.key(:output_config, %{}), Access.key(:format, %{})], %{
+          type: "json_schema",
+          schema: Keyword.fetch!(opts, :json_schema)
+        })
+      end
+    end)
   end
 
   @doc """
   Updates `params` with prompt for retrying a request.
 
-  The error is represented as an erroneous `tool_result`.
+  The error is represented as a user message or erroneous `tool_result` for
+  older models.
   """
   @impl InstructorLite.Adapter
   def retry_prompt(params, _resp_params, errors, response, _opts) do
-    %{"content" => [%{"id" => tool_use_id}]} =
-      assistant_reply = Map.take(response, ["content", "role"])
+    do_better =
+      if legacy_model?(response["model"]) do
+        %{"content" => [%{"id" => tool_use_id}]} =
+          assistant_reply = Map.take(response, ["content", "role"])
 
-    do_better = [
-      assistant_reply,
-      %{
-        role: "user",
-        content: [
+        [
+          assistant_reply,
           %{
-            type: "tool_result",
-            tool_use_id: tool_use_id,
-            is_error: true,
+            role: "user",
+            content: [
+              %{
+                type: "tool_result",
+                tool_use_id: tool_use_id,
+                is_error: true,
+                content: InstructorLite.Prompt.validation_failed(errors)
+              }
+            ]
+          }
+        ]
+      else
+        [
+          Map.take(response, ["content", "role"]),
+          %{
+            role: "user",
             content: InstructorLite.Prompt.validation_failed(errors)
           }
         ]
-      }
-    ]
+      end
 
     Map.update(params, :messages, do_better, fn msgs -> msgs ++ do_better end)
   end
@@ -147,10 +174,22 @@ defmodule InstructorLite.Adapters.Anthropic do
     * `{:error, :unexpected_response, response}` if response is of unexpected shape.
   """
   @impl InstructorLite.Adapter
-  def parse_response(response, _opts) do
+  def parse_response(response, opts) do
     case response do
-      %{"stop_reason" => "tool_use", "content" => [%{"input" => decoded}]} ->
-        {:ok, decoded}
+      %{"model" => model} ->
+        if legacy_model?(model) do
+          case response do
+            %{"stop_reason" => "tool_use", "content" => [%{"input" => decoded}]} ->
+              {:ok, decoded}
+
+            other ->
+              {:error, :unexpected_response, other}
+          end
+        else
+          with {:ok, json} <- find_output(response, opts) do
+            InstructorLite.JSON.decode(json)
+          end
+        end
 
       other ->
         {:error, :unexpected_response, other}
@@ -173,5 +212,27 @@ defmodule InstructorLite.Adapters.Anthropic do
       other ->
         {:error, :unexpected_response, other}
     end
+  end
+
+  @doc false
+  def legacy_model?(model) do
+    !!Enum.find(
+      [
+        "claude-opus-4-1",
+        "claude-opus-4-0",
+        "claude-opus-4-20",
+        "claude-opus-4@",
+        "claude-sonnet-4-0",
+        "claude-sonnet-4-20",
+        "claude-sonnet-4@",
+        "claude-3",
+        "claude-4",
+        "anthropic.claude-3",
+        "anthropic.claude-opus-4-20",
+        "anthropic.claude-opus-4-1",
+        "anthropic.claude-sonnet-4-20"
+      ],
+      &String.starts_with?(model, &1)
+    )
   end
 end
