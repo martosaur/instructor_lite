@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v1.2.0
+  
+  * Switch Gemini adapter to `responseJsonSchema` parameter which is much more
+    chill than the previous `responseSchema` parameter. If you previously
+    employed any workaround for Gemini json schemas, you can likely remove
+    them now.
   * Update Anthropic adapter default model to `claude-haiku-4-5`
   * Use [structured
     outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
