@@ -183,17 +183,21 @@ defmodule InstructorLite.Integration.AnthropicTest do
       assert {:ok, %{next: %{next: %{next: nil}}}} = result
     end
 
-    # reasoning is incompatible with forced tool use, so there should be no difference
     test "reasoning model" do
       schema = %{name: :string, birth_date: :date}
 
       result =
         InstructorLite.instruct(
           %{
-            model: "claude-sonnet-4-20250514",
+            model: "claude-haiku-4-5",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
-            ]
+            ],
+            thinking: %{
+              type: "enabled",
+              budget_tokens: 1024
+            },
+            max_tokens: 2048
           },
           response_model: schema,
           adapter: Anthropic,
