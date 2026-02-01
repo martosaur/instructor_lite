@@ -231,5 +231,29 @@ defmodule InstructorLite.Integration.AnthropicTest do
 
       assert {:ok, "Washington" <> _} = result
     end
+
+    test "legacy model" do
+      schema = %{name: :string, birth_date: :date}
+
+      result =
+        InstructorLite.instruct(
+          %{
+            model: "claude-sonnet-4-0",
+            messages: [
+              %{role: "user", content: "Who was the first president of the USA?"}
+            ]
+          },
+          response_model: schema,
+          adapter: Anthropic,
+          adapter_context: [
+            http_client: Req,
+            api_key: Application.fetch_env!(:instructor_lite, :anthropic_key)
+          ]
+        )
+
+      assert {:ok, %{name: name, birth_date: birth_date}} = result
+      assert is_binary(name)
+      assert %Date{} = birth_date
+    end
   end
 end

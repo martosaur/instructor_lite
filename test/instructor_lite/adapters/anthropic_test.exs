@@ -9,12 +9,31 @@ defmodule InstructorLite.Adapters.AnthropicTest do
   setup :verify_on_exit!
 
   describe "initial_prompt/2" do
-    test "forces tool choice" do
+    test "uses structured output" do
       params = %{}
 
       assert Anthropic.initial_prompt(params, json_schema: :json_schema, notes: "Explanation") ==
                %{
-                 model: "claude-3-5-sonnet-20240620",
+                 model: "claude-haiku-4-5",
+                 max_tokens: 1024,
+                 system: """
+                 You're called by an Elixir application through the InstructorLite library. \
+                 Your task is to understand what the application wants you to do and respond with JSON output that matches the schema. \
+                 The output will be validated by the application against an Ecto schema and potentially some custom rules. \
+                 You may be asked to adjust your response if it doesn't pass validation. \
+                 Additional notes on the schema:
+                 Explanation
+                 """,
+                 output_config: %{format: %{schema: :json_schema, type: "json_schema"}}
+               }
+    end
+
+    test "forces tool choice for legacy model" do
+      params = %{model: "claude-opus-4-1-20250805"}
+
+      assert Anthropic.initial_prompt(params, json_schema: :json_schema, notes: "Explanation") ==
+               %{
+                 model: "claude-opus-4-1-20250805",
                  max_tokens: 1024,
                  system: """
                  You're called by an Elixir application through the InstructorLite library. \
@@ -38,7 +57,56 @@ defmodule InstructorLite.Adapters.AnthropicTest do
   end
 
   describe "retry_prompt/5" do
-    test "adds assistant reply and tool call error" do
+    test "adds new chat entries" do
+      params = %{messages: []}
+
+      response = %{
+        "content" => [
+          %{
+            "text" => "{\"name\":\"George Washington\",\"birth_date\":\"1732-02-22\"}",
+            "type" => "text"
+          }
+        ],
+        "id" => "msg_01EM4vMBchniYpub5C5MVJs4",
+        "model" => "claude-haiku-4-5-20251001",
+        "role" => "assistant",
+        "stop_reason" => "end_turn",
+        "stop_sequence" => nil,
+        "type" => "message",
+        "usage" => %{
+          "cache_creation" => %{
+            "ephemeral_1h_input_tokens" => 0,
+            "ephemeral_5m_input_tokens" => 0
+          },
+          "cache_creation_input_tokens" => 0,
+          "cache_read_input_tokens" => 0,
+          "input_tokens" => 269,
+          "output_tokens" => 20,
+          "service_tier" => "standard"
+        }
+      }
+
+      assert Anthropic.retry_prompt(params, nil, "list of errors", response, []) == %{
+               messages: [
+                 %{
+                   "content" => [
+                     %{
+                       "type" => "text",
+                       "text" => "{\"name\":\"George Washington\",\"birth_date\":\"1732-02-22\"}"
+                     }
+                   ],
+                   "role" => "assistant"
+                 },
+                 %{
+                   content:
+                     "The response did not pass validation. Please try again and fix the following validation errors:\n\nlist of errors\n",
+                   role: "user"
+                 }
+               ]
+             }
+    end
+
+    test "adds assistant reply and tool call error for legacy model" do
       params = %{messages: []}
 
       response = %{
@@ -50,6 +118,7 @@ defmodule InstructorLite.Adapters.AnthropicTest do
             "type" => "tool_use"
           }
         ],
+        "model" => "claude-3-opus-latest",
         "role" => "assistant"
       }
 
@@ -88,6 +157,37 @@ defmodule InstructorLite.Adapters.AnthropicTest do
 
   describe "parse_response/2" do
     test "decodes json from expected output" do
+      response = %{
+        "content" => [
+          %{
+            "text" => "{\"name\":\"George Washington\",\"birth_date\":\"1732-02-22\"}",
+            "type" => "text"
+          }
+        ],
+        "id" => "msg_01EM4vMBchniYpub5C5MVJs4",
+        "model" => "claude-haiku-4-5-20251001",
+        "role" => "assistant",
+        "stop_reason" => "end_turn",
+        "stop_sequence" => nil,
+        "type" => "message",
+        "usage" => %{
+          "cache_creation" => %{
+            "ephemeral_1h_input_tokens" => 0,
+            "ephemeral_5m_input_tokens" => 0
+          },
+          "cache_creation_input_tokens" => 0,
+          "cache_read_input_tokens" => 0,
+          "input_tokens" => 269,
+          "output_tokens" => 20,
+          "service_tier" => "standard"
+        }
+      }
+
+      assert {:ok, %{"birth_date" => "1732-02-22", "name" => "George Washington"}} =
+               Anthropic.parse_response(response, [])
+    end
+
+    test "decodes json from expected output of legacy model" do
       response = %{
         "content" => [
           %{
@@ -216,6 +316,63 @@ defmodule InstructorLite.Adapters.AnthropicTest do
 
       assert {:error, :unexpected_response, "Internal Server Error"} =
                Anthropic.find_output(response, [])
+    end
+  end
+
+  describe "legacy_model?" do
+    test "identifies all models" do
+      # Claude 4.5 Opus models (not legacy)
+      refute Anthropic.legacy_model?("claude-opus-4-5-20251101")
+      refute Anthropic.legacy_model?("claude-opus-4-5")
+
+      # Claude 4.5 Sonnet models (not legacy)
+      refute Anthropic.legacy_model?("claude-sonnet-4-5")
+      refute Anthropic.legacy_model?("claude-sonnet-4-5-20250929")
+
+      # Claude 4.5 Haiku models (not legacy)
+      refute Anthropic.legacy_model?("claude-haiku-4-5")
+      refute Anthropic.legacy_model?("claude-haiku-4-5-20251001")
+
+      # Claude 3.7 Sonnet models (legacy)
+      assert Anthropic.legacy_model?("claude-3-7-sonnet-latest")
+      assert Anthropic.legacy_model?("claude-3-7-sonnet-20250219")
+      assert Anthropic.legacy_model?("anthropic.claude-3-7-sonnet-20250219-v1:0")
+      assert Anthropic.legacy_model?("claude-3-7-sonnet@20250219")
+
+      # Claude 3.5 Haiku models (legacy)
+      assert Anthropic.legacy_model?("claude-3-5-haiku-latest")
+      assert Anthropic.legacy_model?("claude-3-5-haiku-20241022")
+
+      # Claude 4 Sonnet models (legacy)
+      assert Anthropic.legacy_model?("claude-sonnet-4-20250514")
+      assert Anthropic.legacy_model?("claude-sonnet-4-0")
+      assert Anthropic.legacy_model?("claude-4-sonnet-20250514")
+      assert Anthropic.legacy_model?("anthropic.claude-sonnet-4-20250514-v1:0")
+      assert Anthropic.legacy_model?("claude-sonnet-4@20250514")
+
+      # Claude 4 Opus models (legacy)
+      assert Anthropic.legacy_model?("claude-opus-4-0")
+      assert Anthropic.legacy_model?("claude-opus-4-20250514")
+      assert Anthropic.legacy_model?("claude-4-opus-20250514")
+      assert Anthropic.legacy_model?("anthropic.claude-opus-4-20250514-v1:0")
+      assert Anthropic.legacy_model?("claude-opus-4@20250514")
+
+      # Claude 4.1 Opus models (legacy)
+      assert Anthropic.legacy_model?("claude-opus-4-1-20250805")
+      assert Anthropic.legacy_model?("anthropic.claude-opus-4-1-20250805-v1:0")
+      assert Anthropic.legacy_model?("claude-opus-4-1@20250805")
+
+      # Claude 3 Opus models (legacy)
+      assert Anthropic.legacy_model?("claude-3-opus-latest")
+      assert Anthropic.legacy_model?("claude-3-opus-20240229")
+
+      # Claude 3 Haiku models (legacy)
+      assert Anthropic.legacy_model?("claude-3-haiku-20240307")
+      assert Anthropic.legacy_model?("anthropic.claude-3-haiku-20240307-v1:0")
+      assert Anthropic.legacy_model?("claude-3-haiku@20240307")
+
+      # Claude 5 Models (future)
+      refute Anthropic.legacy_model?("claude-5-sonnet")
     end
   end
 end
