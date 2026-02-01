@@ -311,6 +311,40 @@ defmodule InstructorLite.Adapters.AnthropicTest do
       assert {:ok, "Washington"} = Anthropic.find_output(response, [])
     end
 
+    test "isn't confused by reasoning" do
+      response = %{
+        "content" => [
+          %{
+            "signature" =>
+              "Eq4FCkYICxgCKkB+mj99JVauMoUANQo241mSCrKKu9XPY7od/8/Cyh0vQ1iBkLsRAgBIWVWli6lftjbLGL1f1/QruQf/Ie7Rfkc+Egx+tZHbX0/f+h19u5saDOeks8WduO1NHf9rdCIwWkRBBYrn9nP5acwWCvxaQ5KdwRhIaoL8qcP8C95mxDqnYX2/06+tkpQlcgVeMS+yKpUEHWWmO876ZLxRdBhoMhzO14eptlawVEJeXnMLFMJrZ4ngQAOzq+Rb2zItFIqWFzj3nrJVBvCDQlhpDvuUl4T09yNkO0OpaAWmYmSA8BmMoa6V4wfnoLX2olsF7g3kWL986E5PtV5HKejnJmmF1o5z/EHXZ+QnlQ8EEY1IG1FSf7lDemrY6HRb45cJydNWQXrUKRDnwNQtwBwWZVN3hjVmlGiNlA/r9UfCjWe3RqG5bRnz2cwfCa8cpVq68pzpB1FO92Jq5U4FI7x5ryktXgTyn9azSdII62LFVUtseHiI+NX1CIz9P/8Jwd+L0BOpYDmXqzJtCVlkY2tABrXpG4mvqSZgeUSq1G6Ga8QNK9h7w0GR6HumEkZMiSL8l6H4nLfW9QSMWrSqnlIRKljczK7jLaVIxPlSQaavMsD7OE1O5gKjZXioBl3yeKJ1fl6IvgkAhvjITGToBq7hgQ3aYYFCUvUYTjAbZyxU2lB/avYouhTowovBbJR5EyvERw6L/M/eWULFFu/kTIng9KUvfQw+kb2oJDFSCVXop3SOOpQjxwl0RryNeXxldZgeGRxNwKrBgrghe4YA/+74LGb+6E6WCUUKrpiNme7u3z6VhewmJeBSKlLlT8/f0P5oZ7i+WtlotIKwucA3aCToykwilkzv80oC6mGNTRPvPjn6Rf6bpkwQk0F7BJlaV6Ke1msYqJHPcGTy/GAYAQ==",
+            "thinking" =>
+              "The user is asking \"Who was the first president of the USA?\" which is George Washington. However, they want me to respond with JSON that matches the schema provided, which requires:\n- name (string)\n- birth_date (string)\n\nThe schema requires both \"name\" and \"birth_date\" fields.\n\nGeorge Washington was born on February 22, 1732.\n\nI need to return valid JSON matching the schema exactly:\n{\"name\": \"George Washington\", \"birth_date\": \"1732-02-22\"}\n\nLet me format this as a single line without pretty printing or markdown.",
+            "type" => "thinking"
+          },
+          %{"text" => "George Washington", "type" => "text"}
+        ],
+        "id" => "msg_01GAXALFWbpbfHch4YeisbtA",
+        "model" => "claude-haiku-4-5-20251001",
+        "role" => "assistant",
+        "stop_reason" => "end_turn",
+        "stop_sequence" => nil,
+        "type" => "message",
+        "usage" => %{
+          "cache_creation" => %{
+            "ephemeral_1h_input_tokens" => 0,
+            "ephemeral_5m_input_tokens" => 0
+          },
+          "cache_creation_input_tokens" => 0,
+          "cache_read_input_tokens" => 0,
+          "input_tokens" => 299,
+          "output_tokens" => 157,
+          "service_tier" => "standard"
+        }
+      }
+
+      assert {:ok, "George Washington"} = Anthropic.find_output(response, [])
+    end
+
     test "unexpected content" do
       response = "Internal Server Error"
 

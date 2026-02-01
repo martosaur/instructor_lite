@@ -206,8 +206,14 @@ defmodule InstructorLite.Adapters.Anthropic do
   @impl InstructorLite.Adapter
   def find_output(response, _opts) do
     case response do
-      %{"content" => [%{"text" => text}]} ->
-        {:ok, text}
+      %{"content" => content} ->
+        Enum.find_value(content, {:error, :unexpected_response, response}, fn
+          %{"text" => text, "type" => "text"} ->
+            {:ok, text}
+
+          _ ->
+            false
+        end)
 
       other ->
         {:error, :unexpected_response, other}
