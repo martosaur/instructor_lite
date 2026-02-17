@@ -5,6 +5,7 @@
 [![Hex Downloads](https://img.shields.io/hexpm/dt/instructor_lite)](https://hex.pm/packages/instructor_lite)
 [![GitHub stars](https://img.shields.io/github/stars/martosaur/instructor_lite.svg)](https://github.com/martosaur/instructor_lite/stargazers)
 [![CI](https://github.com/martosaur/instructor_lite/actions/workflows/ci.yml/badge.svg)](https://github.com/martosaur/instructor_lite/actions/workflows/ci.yml)
+[![Discord](https://img.shields.io/discord/1471320781890785385?label=discord)](https://discord.gg/Kb9nszqzEy)
 
 Structured prompting for LLMs. InstructorLite is a fork, spiritual successor and almost an entire rewrite of [instructor_ex](https://github.com/thmsmlr/instructor_ex) library.
  
