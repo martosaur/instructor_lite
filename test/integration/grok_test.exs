@@ -11,7 +11,7 @@ defmodule InstructorLite.Integration.GrokTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "grok-3-latest",
+            model: "grok-4.5",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ]
@@ -35,7 +35,7 @@ defmodule InstructorLite.Integration.GrokTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "grok-3-latest",
+            model: "grok-4.5",
             messages: [
               %{
                 role: "user",
@@ -61,7 +61,7 @@ defmodule InstructorLite.Integration.GrokTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "grok-3-latest",
+            model: "grok-4.5",
             messages: [
               %{
                 role: "user",
@@ -86,7 +86,7 @@ defmodule InstructorLite.Integration.GrokTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "grok-3-latest",
+            model: "grok-4.5",
             messages: [
               %{
                 role: "user",
@@ -146,7 +146,7 @@ defmodule InstructorLite.Integration.GrokTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "grok-3-latest",
+            model: "grok-4.5",
             messages: [
               %{
                 role: "user",
@@ -172,7 +172,7 @@ defmodule InstructorLite.Integration.GrokTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "grok-3-latest",
+            model: "grok-4.5",
             messages: [
               %{
                 role: "user",
@@ -206,7 +206,7 @@ defmodule InstructorLite.Integration.GrokTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "grok-3-mini",
+            model: "grok-4.5",
             reasoning_effort: "medium",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
@@ -231,7 +231,7 @@ defmodule InstructorLite.Integration.GrokTest do
       result =
         InstructorLite.ask(
           %{
-            model: "grok-3-latest",
+            model: "grok-4.5",
             messages: [
               %{
                 role: "user",
