@@ -161,7 +161,7 @@ defmodule InstructorLite.Integration.GeminiTest do
           response_model: response_model,
           adapter: Gemini,
           adapter_context: [
-            model: "gemini-2.5-pro",
+            model: "gemini-3.5-flash-lite",
             http_client: Req,
             api_key: Application.fetch_env!(:instructor_lite, :gemini_key)
           ]
@@ -204,7 +204,7 @@ defmodule InstructorLite.Integration.GeminiTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gemini-2.5-flash-lite",
+            model: "gemini-3.5-flash-lite",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ]

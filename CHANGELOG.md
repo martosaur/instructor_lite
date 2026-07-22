@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+  * Update Gemini adapter default model to `gemini-3.5-flash-lite`
+
 ## v1.2.0
   
   * Switch Gemini adapter to `responseJsonSchema` parameter which is much more
