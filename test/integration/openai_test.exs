@@ -11,7 +11,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             input: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ]
@@ -33,7 +33,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             input: [
               %{
                 role: "user",
@@ -58,7 +58,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             input: [
               %{
                 role: "user",
@@ -82,7 +82,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             input: [
               %{
                 role: "user",
@@ -141,7 +141,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             input: [
               %{
                 role: "user",
@@ -166,7 +166,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             input: [
               %{
                 role: "user",
@@ -199,7 +199,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "o4-mini",
+            model: "gpt-5.6-luna",
             reasoning: %{effort: "high", summary: "auto"},
             input: [
               %{role: "user", content: "Who was the first president of the USA?"}
@@ -222,7 +222,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             store: false,
             input: [
               %{
@@ -248,7 +248,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.ask(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             input: [
               %{
                 role: "user",
@@ -273,7 +273,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ]
@@ -295,7 +295,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             messages: [
               %{
                 role: "user",
@@ -320,7 +320,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             messages: [
               %{
                 role: "user",
@@ -344,7 +344,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             messages: [
               %{
                 role: "user",
@@ -403,7 +403,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             messages: [
               %{
                 role: "user",
@@ -428,7 +428,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             messages: [
               %{
                 role: "user",
@@ -461,7 +461,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.instruct(
           %{
-            model: "o4-mini",
+            model: "gpt-5.6-luna",
             reasoning_effort: "medium",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
@@ -484,7 +484,7 @@ defmodule InstructorLite.Integration.OpenAITest do
       result =
         InstructorLite.ask(
           %{
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
             messages: [
               %{
                 role: "user",
