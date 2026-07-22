@@ -189,13 +189,12 @@ defmodule InstructorLite.Integration.AnthropicTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "claude-haiku-4-5",
+            model: "claude-sonnet-5",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ],
             thinking: %{
-              type: "enabled",
-              budget_tokens: 1024
+              type: "adaptive"
             },
             max_tokens: 2048
           },
@@ -216,7 +215,7 @@ defmodule InstructorLite.Integration.AnthropicTest do
       result =
         InstructorLite.ask(
           %{
-            model: "claude-sonnet-4-20250514",
+            model: "claude-sonnet-5",
             max_tokens: 10,
             messages: [
               %{
@@ -242,7 +241,7 @@ defmodule InstructorLite.Integration.AnthropicTest do
       result =
         InstructorLite.instruct(
           %{
-            model: "claude-sonnet-4-0",
+            model: "claude-opus-4-1-20250805",
             messages: [
               %{role: "user", content: "Who was the first president of the USA?"}
             ]
