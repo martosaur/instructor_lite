@@ -1,7 +1,7 @@
 defmodule InstructorLite.MixProject do
   use Mix.Project
 
-  @version "1.2.0"
+  @version "1.3.0"
   @source_url "https://github.com/martosaur/instructor_lite"
 
   def project do
@@ -64,7 +64,8 @@ defmodule InstructorLite.MixProject do
           InstructorLite.Adapters.OpenAI,
           InstructorLite.Adapters.Llamacpp,
           InstructorLite.Adapters.Gemini,
-          InstructorLite.Adapters.ChatCompletionsCompatible
+          InstructorLite.Adapters.ChatCompletionsCompatible,
+          InstructorLite.Adapters.ResponsesCompatible
         ]
       ],
       groups_for_extras: [

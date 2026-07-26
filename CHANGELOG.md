@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## v1.3.0
 
-  * Add ``InstructorLite.Adapters.ChatCompletionsCompatible` adapter. `OpenAI`
+  * Add `InstructorLite.Adapters.ChatCompletionsCompatible` adapter. `OpenAI`
     adapter remains but will simply delegate to it under the hood.
   * Update Gemini adapter default model to `gemini-3.5-flash-lite`
 
