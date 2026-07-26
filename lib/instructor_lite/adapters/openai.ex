@@ -28,76 +28,27 @@ defmodule InstructorLite.Adapters.OpenAI do
   """
   @behaviour InstructorLite.Adapter
 
-  @default_model "gpt-4o-mini"
-
-  @send_request_schema NimbleOptions.new!(
-                         api_key: [
-                           type: :string,
-                           required: true,
-                           doc: "OpenAI API key"
-                         ],
-                         http_client: [
-                           type: :atom,
-                           default: Req,
-                           doc: "Any module that follows `Req.post/2` interface"
-                         ],
-                         http_options: [
-                           type: :keyword_list,
-                           default: [receive_timeout: 60_000],
-                           doc: "Options passed to `http_client.post/2`"
-                         ],
-                         url: [
-                           type: :string,
-                           default: "https://api.openai.com/v1/responses",
-                           doc: "API endpoint to use for sending requests"
-                         ]
-                       )
+  alias InstructorLite.Adapters.ResponsesCompatible
 
   @doc """
   Make request to OpenAI API.
     
   ## Options
 
-  #{NimbleOptions.docs(@send_request_schema)}
+  #{NimbleOptions.docs(ResponsesCompatible.send_request_schema())}
   """
   @impl InstructorLite.Adapter
-  def send_request(params, opts) do
-    context =
-      opts
-      |> Keyword.get(:adapter_context, [])
-      |> NimbleOptions.validate!(@send_request_schema)
-
-    options =
-      Keyword.merge(context[:http_options], json: params, auth: {:bearer, context[:api_key]})
-
-    case context[:http_client].post(context[:url], options) do
-      {:ok, %{status: 200, body: body}} -> {:ok, body}
-      {:ok, response} -> {:error, response}
-      {:error, reason} -> {:error, reason}
-    end
-  end
+  defdelegate send_request(params, opts), to: InstructorLite.Adapters.ResponsesCompatible
 
   @doc """
   Updates `params` with prompt based on `json_schema` and `notes`.
 
   It uses `instructions` parameter for system prompt.
 
-  Also specifies default `#{@default_model}` model if not provided by a user. 
+  Also specifies default `#{ResponsesCompatible.default_model()}` model if not provided by a user. 
   """
   @impl InstructorLite.Adapter
-  def initial_prompt(params, opts) do
-    params
-    |> Map.put_new(:model, @default_model)
-    |> Map.put_new(:text, %{
-      format: %{
-        type: "json_schema",
-        name: "schema",
-        strict: true,
-        schema: Keyword.fetch!(opts, :json_schema)
-      }
-    })
-    |> Map.put_new(:instructions, InstructorLite.Prompt.prompt(opts))
-  end
+  defdelegate initial_prompt(params, opts), to: InstructorLite.Adapters.ResponsesCompatible
 
   @doc """
   Updates `params` with prompt for retrying a request.
@@ -109,36 +60,8 @@ defmodule InstructorLite.Adapters.OpenAI do
   adapters do.
   """
   @impl InstructorLite.Adapter
-  def retry_prompt(params, resp_params, errors, response, _opts) do
-    do_better = [
-      %{
-        role: "system",
-        content: InstructorLite.Prompt.validation_failed(errors)
-      }
-    ]
-
-    case response do
-      %{"store" => true, "id" => response_id} ->
-        params
-        |> Map.put(:input, do_better)
-        |> Map.put(:previous_response_id, response_id)
-        |> Map.delete(:instructions)
-
-      _ ->
-        Map.update!(params, :input, fn input ->
-          assistant_response = %{
-            role: "assistant",
-            content: InstructorLite.JSON.encode!(resp_params)
-          }
-
-          if is_binary(input) do
-            [%{role: "user", content: input}, assistant_response | do_better]
-          else
-            input ++ [assistant_response | do_better]
-          end
-        end)
-    end
-  end
+  defdelegate retry_prompt(params, resp_params, errors, response, opts),
+    to: InstructorLite.Adapters.ResponsesCompatible
 
   @doc """
   Parse chat completion endpoint response.
@@ -149,11 +72,7 @@ defmodule InstructorLite.Adapters.OpenAI do
     * `{:error, :unexpected_response, response}` if response is of unexpected shape.
   """
   @impl InstructorLite.Adapter
-  def parse_response(response, opts) do
-    with {:ok, json} <- find_output(response, opts) do
-      InstructorLite.JSON.decode(json)
-    end
-  end
+  defdelegate parse_response(response, opts), to: InstructorLite.Adapters.ResponsesCompatible
 
   @doc """
   Parse API response in search of plain text output.
@@ -164,22 +83,5 @@ defmodule InstructorLite.Adapters.OpenAI do
     * `{:error, :unexpected_response, response}` if response is of unexpected shape.
   """
   @impl InstructorLite.Adapter
-  def find_output(response, _opts) do
-    case response do
-      %{"output" => output} ->
-        Enum.find_value(output, {:error, :unexpected_response, response}, fn
-          %{"role" => "assistant", "content" => [%{"text" => text}]} ->
-            {:ok, text}
-
-          %{"role" => "assistant", "content" => [%{"refusal" => reason}]} ->
-            {:error, :refusal, reason}
-
-          _ ->
-            false
-        end)
-
-      other ->
-        {:error, :unexpected_response, other}
-    end
-  end
+  defdelegate find_output(response, opts), to: InstructorLite.Adapters.ResponsesCompatible
 end

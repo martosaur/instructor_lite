@@ -1,0 +1,195 @@
+defmodule InstructorLite.Adapters.ResponsesCompatible do
+  @moduledoc """
+  Adapter for Responses-compatible API endpoints, such as
+  [OpenAI](https://developers.openai.com/api/reference/resources/responses),
+  [Grok](https://docs.x.ai/developers/rest-api-reference/inference/chat#create-new-response).
+
+
+  This adapter uses [structured
+  outputs](https://platform.openai.com/docs/guides/structured-outputs/structured-outputs).
+
+  ## Params
+  `params` argument should be shaped as a [Create model response request
+  body](https://platform.openai.com/docs/api-reference/responses/create).
+   
+  ## Example
+
+  ```
+  InstructorLite.instruct(%{
+      input: [%{role: "user", content: "John is 25yo"}],
+      model: "gpt-5.6-luna",
+      service_tier: "default"
+    },
+    response_model: %{name: :string, age: :integer},
+    adapter: InstructorLite.Adapters.ResponsesCompatible,
+    adapter_context: [
+      api_key: Application.fetch_env!(:instructor_lite, :openai_key),
+      url: "https://api.openai.com/v1/responses"
+    ]
+  )
+  {:ok, %{name: "John", age: 25}}
+  ```
+  """
+  @behaviour InstructorLite.Adapter
+
+  @default_model "gpt-4o-mini"
+
+  @send_request_schema NimbleOptions.new!(
+                         api_key: [
+                           type: :string,
+                           required: true,
+                           doc: "API key"
+                         ],
+                         http_client: [
+                           type: :atom,
+                           default: Req,
+                           doc: "Any module that follows `Req.post/2` interface"
+                         ],
+                         http_options: [
+                           type: :keyword_list,
+                           default: [receive_timeout: 60_000],
+                           doc: "Options passed to `http_client.post/2`"
+                         ],
+                         url: [
+                           type: :string,
+                           default: "https://api.openai.com/v1/responses",
+                           doc: "API endpoint to use for sending requests"
+                         ]
+                       )
+
+  @doc """
+  Make request to API.
+    
+  ## Options
+
+  #{NimbleOptions.docs(@send_request_schema)}
+  """
+  @impl InstructorLite.Adapter
+  def send_request(params, opts) do
+    context =
+      opts
+      |> Keyword.get(:adapter_context, [])
+      |> NimbleOptions.validate!(@send_request_schema)
+
+    options =
+      Keyword.merge(context[:http_options], json: params, auth: {:bearer, context[:api_key]})
+
+    case context[:http_client].post(context[:url], options) do
+      {:ok, %{status: 200, body: body}} -> {:ok, body}
+      {:ok, response} -> {:error, response}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Updates `params` with prompt based on `json_schema` and `notes`.
+
+  It uses `instructions` parameter for system prompt.
+
+  Also specifies default `#{@default_model}` model if not provided by a user. 
+  """
+  @impl InstructorLite.Adapter
+  def initial_prompt(params, opts) do
+    params
+    |> Map.put_new(:model, @default_model)
+    |> Map.put_new(:text, %{
+      format: %{
+        type: "json_schema",
+        name: "schema",
+        strict: true,
+        schema: Keyword.fetch!(opts, :json_schema)
+      }
+    })
+    |> Map.put_new(:instructions, InstructorLite.Prompt.prompt(opts))
+  end
+
+  @doc """
+  Updates `params` with prompt for retrying a request.
+
+  If the initial request was made with conversation state (enabled by
+  default), it will drop previous chat messages from the request and specify
+  `previous_response_id` instead. If conversation state is disabled, it will
+  append new messages to the previous `input` the same way chat completions-based
+  adapters do.
+  """
+  @impl InstructorLite.Adapter
+  def retry_prompt(params, resp_params, errors, response, _opts) do
+    do_better = [
+      %{
+        role: "system",
+        content: InstructorLite.Prompt.validation_failed(errors)
+      }
+    ]
+
+    case response do
+      %{"store" => true, "id" => response_id} ->
+        params
+        |> Map.put(:input, do_better)
+        |> Map.put(:previous_response_id, response_id)
+        |> Map.delete(:instructions)
+
+      _ ->
+        Map.update!(params, :input, fn input ->
+          assistant_response = %{
+            role: "assistant",
+            content: InstructorLite.JSON.encode!(resp_params)
+          }
+
+          if is_binary(input) do
+            [%{role: "user", content: input}, assistant_response | do_better]
+          else
+            input ++ [assistant_response | do_better]
+          end
+        end)
+    end
+  end
+
+  @doc """
+  Parse endpoint response.
+
+  Can return:
+    * `{:ok, parsed_json}` on success.
+    * `{:error, :refusal, reason}` on [refusal](https://platform.openai.com/docs/guides/structured-outputs/refusals).
+    * `{:error, :unexpected_response, response}` if response is of unexpected shape.
+  """
+  @impl InstructorLite.Adapter
+  def parse_response(response, opts) do
+    with {:ok, json} <- find_output(response, opts) do
+      InstructorLite.JSON.decode(json)
+    end
+  end
+
+  @doc """
+  Parse API response in search of plain text output.
+
+  Can return:
+    * `{:ok, text_output}` on success.
+    * `{:error, :refusal, reason}` on [refusal](https://platform.openai.com/docs/guides/structured-outputs/refusals).
+    * `{:error, :unexpected_response, response}` if response is of unexpected shape.
+  """
+  @impl InstructorLite.Adapter
+  def find_output(response, _opts) do
+    case response do
+      %{"output" => output} ->
+        Enum.find_value(output, {:error, :unexpected_response, response}, fn
+          %{"role" => "assistant", "content" => [%{"text" => text}]} ->
+            {:ok, text}
+
+          %{"role" => "assistant", "content" => [%{"refusal" => reason}]} ->
+            {:error, :refusal, reason}
+
+          _ ->
+            false
+        end)
+
+      other ->
+        {:error, :unexpected_response, other}
+    end
+  end
+
+  @doc false
+  def default_model(), do: @default_model
+
+  @doc false
+  def send_request_schema(), do: @send_request_schema
+end
